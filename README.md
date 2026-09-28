@@ -81,6 +81,7 @@ flowchart TB
 * **Refresh Token Rotation**: Each token is minted with a unique UUID (`jti`). Using a refresh token automatically blacklists its `jti` in Redis for the remainder of its TTL, preventing replay attacks.
 * **Account Status Enforcement**: Accounts in `Blocked` or `ForceChangePassword` status are blocked across authentication and session validation.
 * **Data Sanitization**: `AllExceptionsFilter` strips internal database error messages, stack traces, and driver codes from client responses while retaining trace IDs for internal logs.
+* **Architectural Note on Rate Limiting**: Application-level rate limiting was intentionally omitted. In enterprise production systems, traffic shaping, DDoS protection, and rate limiting are managed upstream at the API Gateway layer (such as **Kong Gateway** or Cloudflare) before reaching the service. Omitting it here keeps the backend codebase focused on core business logic without introducing unnecessary complexity.
 
 ### 2. High-Performance Transactions & Analytics
 * **Processing Provider Architecture**: Transactions are not tightly coupled database relations; they represent independent financial ledger streams ingested via `DatabaseTransactionProvider` (simulating external payment gateways, processing hosts, and terminal engines).
