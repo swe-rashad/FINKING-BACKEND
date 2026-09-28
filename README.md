@@ -34,15 +34,16 @@ flowchart TB
     Auth["AuthModule (Token Rotation, Sign-In, Sign-Up)"]
     Users["UsersModule (CRUD, Scoped Roles, Block)"]
     Merchants["MerchantsModule (Merchant Lifecycle)"]
+    TxProvider["DatabaseTransactionProvider (Processing Engine Ingestion)"]
     Transactions["TransactionsModule (History, Filters, Detail)"]
     Statistics["StatisticsModule (Revenue, Metrics, KPIs)"]
   end
 
-  subgraph AsyncWorker ["Background Job Processing"]
-    Queue["BullMQ Queue ('transaction-export')"]
-    Worker["TransactionExportProcessor (WorkerHost)"]
+  subgraph AsyncWorker ["ExportModule (Background Worker)"]
+    Queue["BullMQ Queue ('export-queue')"]
+    Worker["ExportProcessor (WorkerHost)"]
     Excel["ExcelJS (.xlsx Generation)"]
-    Mail["Nodemailer (SMTP / Email Dispatch)"]
+    Mail["MailService (Nodemailer Email Dispatch)"]
   end
 
   subgraph DataStores ["Storage & In-Memory"]
@@ -59,9 +60,10 @@ flowchart TB
   Auth -->|Revoke / JTI Check| Redis
   Users --> Postgres
   Merchants --> Postgres
+  TxProvider -->|Ingest Stream| Transactions
+  Transactions --> Postgres
   Statistics --> Postgres
 
-  Transactions --> Postgres
   Transactions -->|Push Export Job| Queue
   Queue --> Worker
   Worker --> Postgres
@@ -81,6 +83,7 @@ flowchart TB
 * **Data Sanitization**: `AllExceptionsFilter` strips internal database error messages, stack traces, and driver codes from client responses while retaining trace IDs for internal logs.
 
 ### 2. High-Performance Transactions & Analytics
+* **Processing Provider Architecture**: Transactions are not tightly coupled database relations; they represent independent financial ledger streams ingested via `DatabaseTransactionProvider` (simulating external payment gateways, processing hosts, and terminal engines).
 * Paginated transactions with composite filtering (status, date range, merchant, currency, type, RRN).
 * Dedicated statistics aggregation for total revenue, volume, average transaction size, and category distribution.
 * Composite database indexing for fast reads on multi-million row datasets.
