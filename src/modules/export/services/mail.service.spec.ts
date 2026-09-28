@@ -33,7 +33,7 @@ describe('MailService', () => {
     });
 
     expect(sendMailSpy).toHaveBeenCalledWith({
-      from: '"FinKing Reports" <reports@finking.com>',
+      from: '"FinKing Reports" <testuser>',
       to: 'recipient@finking.com',
       subject: 'Test Report',
       html: '<h1>Report</h1>',
