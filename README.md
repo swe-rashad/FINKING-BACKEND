@@ -1,15 +1,16 @@
-# FinKing Backend — Financial Operations API Engine
+# FinKing Backend — Node.js & NestJS Financial Platform API
 
+[![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?style=flat&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![NestJS](https://img.shields.io/badge/NestJS-11.x-E0234E?style=flat&logo=nestjs&logoColor=white)](https://nestjs.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=flat&logo=redis&logoColor=white)](https://redis.io/)
 [![BullMQ](https://img.shields.io/badge/BullMQ-Background_Queues-orange?style=flat)](https://bullmq.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
-[![Tests](https://img.shields.io/badge/Tests-121%20Passed-brightgreen?style=flat&logo=jest&logoColor=white)](https://jestjs.io/)
+[![Tests](https://img.shields.io/badge/Tests-142%20Passed-brightgreen?style=flat&logo=jest&logoColor=white)](https://jestjs.io/)
 [![Frontend](https://img.shields.io/badge/Frontend-FINKING--FRONTEND-61DAFB?style=flat&logo=react&logoColor=black)](https://github.com/swe-rashad/FINKING-FRONTEND)
 
-Production-ready backend engine for the **FinKing** B2B financial dashboard platform. Built with a decoupled domain architecture, fine-grained access control, token rotation, and asynchronous queue workers.
+Production-ready financial backend for the **FinKing** B2B financial dashboard platform, built with **Node.js** and **NestJS**. Built with a decoupled domain architecture, fine-grained RBAC access control, token rotation, transaction ledger management, and asynchronous BullMQ background queue workers.
 
 Frontend Repository: [swe-rashad/FINKING-FRONTEND](https://github.com/swe-rashad/FINKING-FRONTEND)
 
