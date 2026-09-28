@@ -10,7 +10,7 @@
 [![Tests](https://img.shields.io/badge/Tests-142%20Passed-brightgreen?style=flat&logo=jest&logoColor=white)](https://jestjs.io/)
 [![Frontend](https://img.shields.io/badge/Frontend-FINKING--FRONTEND-61DAFB?style=flat&logo=react&logoColor=black)](https://github.com/swe-rashad/FINKING-FRONTEND)
 
-Production-ready financial backend for the **FinKing** B2B financial dashboard platform, built with **Node.js** and **NestJS**. Built with a decoupled domain architecture, fine-grained RBAC access control, token rotation, transaction ledger management, and asynchronous BullMQ background queue workers.
+FinKing Backend is a RESTful API service for financial operations and reporting, built with **Node.js** and **NestJS**. It handles user authentication with JWT token rotation, role-based access control, transaction history, platform analytics, and background report exports via email.
 
 Frontend Repository: [swe-rashad/FINKING-FRONTEND](https://github.com/swe-rashad/FINKING-FRONTEND)
 
@@ -26,24 +26,24 @@ flowchart TB
 
   subgraph Gateway ["Security & HTTP Pipeline"]
     Helmet["Helmet Security Headers"]
-    Filter["Sanitized AllExceptionsFilter"]
+    Filter["AllExceptionsFilter (src/common/filters)"]
     Guards["Auth Pipeline: JwtAuthGuard -> RolesGuard -> PermissionsGuard"]
   end
 
   subgraph Modules ["Domain Modules"]
     Auth["AuthModule (Token Rotation, Sign-In, Sign-Up)"]
-    Users["UsersModule (CRUD, Scoped Roles, Block)"]
-    Merchants["MerchantsModule (Merchant Lifecycle)"]
-    TxProvider["DatabaseTransactionProvider (Processing Engine Ingestion)"]
-    Transactions["TransactionsModule (History, Filters, Detail)"]
-    Statistics["StatisticsModule (Revenue, Metrics, KPIs)"]
+    Users["UsersModule (CRUD, Roles, Block/Unblock)"]
+    Merchants["MerchantsModule (Merchant Profiles)"]
+    TxProvider["DatabaseTransactionProvider (Ingestion)"]
+    Transactions["TransactionsModule (Filters, Details)"]
+    Statistics["StatisticsModule (KPIs, Charts)"]
   end
 
   subgraph AsyncWorker ["ExportModule (Background Worker)"]
     Queue["BullMQ Queue ('export-queue')"]
     Worker["ExportProcessor (WorkerHost)"]
     Excel["ExcelJS (.xlsx Generation)"]
-    Mail["MailService (Nodemailer Email Dispatch)"]
+    Mail["MailService (Nodemailer SMTP Dispatch)"]
   end
 
   subgraph DataStores ["Storage & In-Memory"]
@@ -57,7 +57,7 @@ flowchart TB
   Guards --> Modules
 
   Auth --> Postgres
-  Auth -->|Revoke / JTI Check| Redis
+  Auth -->|Token Blocklist / JTI| Redis
   Users --> Postgres
   Merchants --> Postgres
   TxProvider -->|Ingest Stream| Transactions
@@ -65,6 +65,7 @@ flowchart TB
   Statistics --> Postgres
 
   Transactions -->|Push Export Job| Queue
+  Statistics -->|Push Export Job| Queue
   Queue --> Worker
   Worker --> Postgres
   Worker --> Excel
@@ -73,32 +74,23 @@ flowchart TB
 
 ---
 
-## Core Capabilities
+## Key Features
 
-### 1. Security & RBAC
-* **Role-Based Access Control**: Hierarchical role matrix (`Admin`, `Employee`, `Customer`).
-* **Granular Permissions**: Decorator-driven checks (`users:read`, `users:create`, `transactions:read`, etc.).
-* **Refresh Token Rotation**: Each token is minted with a unique UUID (`jti`). Using a refresh token automatically blacklists its `jti` in Redis for the remainder of its TTL, preventing replay attacks.
-* **Account Status Enforcement**: Accounts in `Blocked` or `ForceChangePassword` status are blocked across authentication and session validation.
-* **Data Sanitization**: `AllExceptionsFilter` strips internal database error messages, stack traces, and driver codes from client responses while retaining trace IDs for internal logs.
-* **Architectural Note on Rate Limiting**: Application-level rate limiting was intentionally omitted. In enterprise production systems, traffic shaping, DDoS protection, and rate limiting are managed upstream at the API Gateway layer (such as **Kong Gateway** or Cloudflare) before reaching the service. Omitting it here keeps the backend codebase focused on core business logic without introducing unnecessary complexity.
+### 1. Authentication & Security
+* **JWT with Refresh Token Rotation**: Access tokens expire in 1 day; refresh tokens use a unique UUID (`jti`). When a refresh token is used, its `jti` is stored in Redis until its TTL expires, preventing reuse.
+* **Role-Based & Permission-Based Access**: Supports roles (`Admin`, `Employee`, `Customer`) and permissions (`users:read`, `users:create`, `transactions:read`, etc.).
+* **Account Status Checks**: Blocked users are stopped directly at the `JwtAuthGuard` level with a 403 response.
+* **Centralized Exception Handling**: `AllExceptionsFilter` catches uncaught errors, hides database error details from clients, and logs trace IDs for debugging.
+* **Architectural Note on Rate Limiting**: Application-level rate limiting was omitted here. In enterprise systems, rate limiting and traffic management are handled upstream by an API Gateway (such as Kong Gateway or Cloudflare). Keeping it outside the service code simplifies local development while following microservice separation of concerns.
 
-### 2. High-Performance Transactions & Analytics
-* **Processing Provider Architecture**: Transactions are not tightly coupled database relations; they represent independent financial ledger streams ingested via `DatabaseTransactionProvider` (simulating external payment gateways, processing hosts, and terminal engines).
-* Paginated transactions with composite filtering (status, date range, merchant, currency, type, RRN).
-* Dedicated statistics aggregation for total revenue, volume, average transaction size, and category distribution.
-* Composite database indexing for fast reads on multi-million row datasets.
+### 2. Transactions & Statistics
+* **Transaction Ingestion**: `DatabaseTransactionProvider` simulates transactions from payment gateways and terminals, making transaction data independent from user tables.
+* **Filtering & Pagination**: Query transactions by status, type, currency, sender, receiver, merchant, and date range.
+* **Analytics**: Aggregates total revenue, transaction counts, average amount, and category distribution for the dashboard.
 
-### 3. Asynchronous Export with BullMQ
-* Large report requests (`POST /transactions/export` & `POST /statistics/export`) validate date ranges (maximum 1 year) and return immediately (`200 OK`).
-* Modular background workers (`ExportProcessor` via `ExportModule`):
-  * Query datasets from PostgreSQL without blocking client HTTP threads.
-  * Construct formatted `.xlsx` workbooks with **ExcelJS** (multi-sheet KPI workbooks for statistics and ledger workbooks for transactions).
-  * Send branded HTML emails with reports attached via **Nodemailer**.
-
-### 4. Database Migrations
-* Clean TypeORM CLI migration setup with `src/database/data-source.ts`.
-* Safe schema versioning for zero-downtime production deployments.
+### 3. Background Job Processing (BullMQ & Redis)
+* Export endpoints (`POST /transactions/export` and `POST /statistics/export`) add jobs to `export-queue` in BullMQ and return immediately.
+* `ExportProcessor` runs in the background, pulls data from PostgreSQL, creates an `.xlsx` spreadsheet using **ExcelJS**, and emails it to the user with **Nodemailer**.
 
 ---
 
@@ -106,31 +98,30 @@ flowchart TB
 
 | Technology | Purpose |
 |---|---|
-| **NestJS 11** | Scalable enterprise Node.js framework |
-| **TypeScript 5** | Strict type safety across all DTOs and models |
-| **PostgreSQL 16** | Primary ACID relational database |
-| **TypeORM 1.x** | Object-Relational Mapping & migration manager |
-| **Redis 7** | Token blocklist storage & BullMQ job queue |
-| **BullMQ** | Distributed background job queue manager |
-| **ExcelJS** | Memory-efficient Excel (.xlsx) file generator |
-| **Nodemailer** | Transactional email delivery engine |
-| **Helmet** | HTTP security headers (OWASP best practices) |
-| **Docker & Compose** | Containerized deployment with automated health checks |
-| **Jest** | Unit and integration test suite |
+| **NestJS 11** | Backend framework |
+| **TypeScript 5** | Static type checking and DTO contracts |
+| **PostgreSQL 16** | Relational database |
+| **TypeORM 1.x** | ORM and migrations |
+| **Redis 7** | Token blocklist and BullMQ queue broker |
+| **BullMQ** | Background job queue |
+| **ExcelJS** | Excel (.xlsx) file generation |
+| **Nodemailer** | SMTP email delivery |
+| **Helmet** | HTTP security headers |
+| **Jest** | Unit and integration testing |
 
 ---
 
-## Quick Start
+## Getting Started
 
-### Option A: Run with Docker Compose (Recommended)
+### Option A: Using Docker Compose
 
-Start the API, PostgreSQL, and Redis with a single command:
+Run the API, PostgreSQL, and Redis together:
 
 ```bash
 docker compose up --build
 ```
 
-The API will be available at `http://localhost:3000`. Swagger API docs will be ready at `http://localhost:3000/api/docs`.
+The API will start at `http://localhost:3000`.
 
 ---
 
@@ -139,13 +130,13 @@ The API will be available at `http://localhost:3000`. Swagger API docs will be r
 #### 1. Prerequisites
 * Node.js 20+
 * PNPM (`npm install -g pnpm`)
-* PostgreSQL 16 & Redis 7 running locally
+* PostgreSQL 16 and Redis 7 running locally
 
-#### 2. Configure Environment
+#### 2. Environment Configuration
 ```bash
 cp .env.sample .env
 ```
-Update `.env` with your local database and Redis credentials.
+Update `.env` with your database, Redis, and SMTP settings.
 
 #### 3. Install Dependencies
 ```bash
@@ -154,16 +145,15 @@ pnpm install
 
 #### 4. Run Migrations & Seeds (Optional)
 ```bash
-# Run database seeders (mock transactions and users)
 pnpm db:seed
 ```
 
-#### 5. Start the Application
+#### 5. Start the Server
 ```bash
-# Development mode with hot-reload
+# Development with hot-reload
 pnpm start:dev
 
-# Production mode
+# Production build and run
 pnpm build
 pnpm start:prod
 ```
@@ -172,46 +162,34 @@ pnpm start:prod
 
 ## Database Migrations
 
-FinKing uses TypeORM CLI migrations for safe schema evolution:
+TypeORM CLI commands for database schema updates:
 
 ```bash
 # Generate a migration based on entity changes
 pnpm migration:generate src/database/migrations/YourMigrationName
 
-# Apply pending migrations
+# Run pending migrations
 pnpm migration:run
 
-# Revert the last applied migration
+# Revert the latest migration
 pnpm migration:revert
 ```
 
 ---
 
-## Testing
+## Running Tests
 
-The project maintains comprehensive test coverage across services, guards, controllers, processors, and filters:
+Unit tests cover services, guards, controllers, processors, and filters:
 
 ```bash
 # Run all unit tests
 pnpm test
 
-# Run tests with coverage report
+# Run tests with coverage
 pnpm test:cov
 ```
 
-**Test Status:** 20 test suites, 121 tests passing (100% guard coverage).
-
----
-
-## API Documentation
-
-Interactive Swagger (OpenAPI) documentation is auto-generated and available at:
-
-```
-http://localhost:3000/api/docs
-```
-
-It includes bearer token authorization, request/response schemas, and validation criteria for all endpoints.
+All 23 test suites and 142 unit tests pass.
 
 ---
 
