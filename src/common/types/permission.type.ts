@@ -1,5 +1,4 @@
 export const Permissions = {
-    StatisticsRead: "statistics:read",
     UsersCreate: 'users:create',
     UsersRead: 'users:read',
     UsersUpdate: 'users:update',

@@ -5,7 +5,6 @@ import { GetStatisticsDto } from './dto/get-statistics.dto';
 import { ExportStatisticsDto } from './dto/export-statistics.dto';
 import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import { Roles } from '@/common/decorators/roles.decorator';
-import { Permissions } from '@/common/decorators/permission.decorator';
 import { UsersRoles } from '@/modules/users/types/users.type';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import type { JwtPayload } from '@/modules/auth/types/auth.type';
@@ -18,7 +17,6 @@ const CACHE_TTL = 1 * 60 * 60 * 1000;
 @CacheTTL(CACHE_TTL)
 @UseInterceptors(CacheInterceptor)
 @Roles(UsersRoles.Admin)
-@Permissions('statistics:read')
 export class StatisticsController {
   constructor(private readonly statisticsService: StatisticsService) { }
 
