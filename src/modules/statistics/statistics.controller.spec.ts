@@ -1,0 +1,170 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { StatisticsController } from './statistics.controller';
+import { StatisticsService } from './statistics.service';
+import { GetStatisticsDto } from './dto/get-statistics.dto';
+import { RevenuePeriodEnum } from './types/statistics.type';
+
+describe('StatisticsController', () => {
+  let controller: StatisticsController;
+  let service: jest.Mocked<Partial<StatisticsService>>;
+
+  const queryDto: GetStatisticsDto = {
+    startDate: new Date('2025-01-01'),
+    endDate: new Date('2025-01-31'),
+  };
+
+  beforeEach(async () => {
+    service = {
+      getRevenueOverview: jest.fn(),
+      getCategoryDistribution: jest.fn(),
+      getTotalRevenue: jest.fn(),
+      getTotalTransactions: jest.fn(),
+      getAverageTransactionAmount: jest.fn(),
+      getActiveUsers: jest.fn(),
+      getLastTransactions: jest.fn(),
+      exportStatistics: jest.fn(),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [StatisticsController],
+      providers: [
+        {
+          provide: StatisticsService,
+          useValue: service,
+        },
+        {
+          provide: CACHE_MANAGER,
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
+            del: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    controller = module.get<StatisticsController>(StatisticsController);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('getRevenueOverview', () => {
+    it('should delegate to service.getRevenueOverview', async () => {
+      const mockResult = {
+        period: RevenuePeriodEnum.Weekly,
+        data: [{ date: '2025-01-01', currency: 'USD', value: 100 }],
+      };
+      (service.getRevenueOverview as jest.Mock).mockResolvedValue(mockResult);
+
+      const result = await controller.getRevenueOverview(queryDto);
+
+      expect(service.getRevenueOverview).toHaveBeenCalledWith(queryDto);
+      expect(result).toEqual(mockResult);
+    });
+  });
+
+  describe('getCategoryDistribution', () => {
+    it('should delegate to service.getCategoryDistribution', async () => {
+      const mockResult = {
+        totalTransactions: 10,
+        data: [{ type: 'payment', value: 100, transactionsCount: 10 }],
+      };
+      (service.getCategoryDistribution as jest.Mock).mockResolvedValue(
+        mockResult,
+      );
+
+      const result = await controller.getCategoryDistribution(queryDto);
+
+      expect(service.getCategoryDistribution).toHaveBeenCalledWith(queryDto);
+      expect(result).toEqual(mockResult);
+    });
+  });
+
+  describe('getTotalRevenue', () => {
+    it('should delegate to service.getTotalRevenue', async () => {
+      (service.getTotalRevenue as jest.Mock).mockResolvedValue({ value: 5000 });
+
+      const result = await controller.getTotalRevenue(queryDto);
+
+      expect(service.getTotalRevenue).toHaveBeenCalledWith(queryDto);
+      expect(result).toEqual({ value: 5000 });
+    });
+  });
+
+  describe('getTotalTransactions', () => {
+    it('should delegate to service.getTotalTransactions', async () => {
+      (service.getTotalTransactions as jest.Mock).mockResolvedValue({
+        value: 120,
+      });
+
+      const result = await controller.getTotalTransactions(queryDto);
+
+      expect(service.getTotalTransactions).toHaveBeenCalledWith(queryDto);
+      expect(result).toEqual({ value: 120 });
+    });
+  });
+
+  describe('getAvarageTransactionAmount', () => {
+    it('should delegate to service.getAverageTransactionAmount', async () => {
+      (service.getAverageTransactionAmount as jest.Mock).mockResolvedValue({
+        value: 41.67,
+      });
+
+      const result = await controller.getAvarageTransactionAmount(queryDto);
+
+      expect(service.getAverageTransactionAmount).toHaveBeenCalledWith(
+        queryDto,
+      );
+      expect(result).toEqual({ value: 41.67 });
+    });
+  });
+
+  describe('getActiveUsers', () => {
+    it('should delegate to service.getActiveUsers', async () => {
+      (service.getActiveUsers as jest.Mock).mockResolvedValue({ value: 25 });
+
+      const result = await controller.getActiveUsers(queryDto);
+
+      expect(service.getActiveUsers).toHaveBeenCalledWith(queryDto);
+      expect(result).toEqual({ value: 25 });
+    });
+  });
+
+  describe('getLastTransactions', () => {
+    it('should delegate to service.getLastTransactions', async () => {
+      const mockList = [{ transactionId: 1 }] as any;
+      (service.getLastTransactions as jest.Mock).mockResolvedValue(mockList);
+
+      const result = await controller.getLastTransactions(queryDto);
+
+      expect(service.getLastTransactions).toHaveBeenCalledWith(queryDto);
+      expect(result).toEqual(mockList);
+    });
+  });
+
+  describe('exportStatistics', () => {
+    it('should delegate to service.exportStatistics', async () => {
+      const mockResult = {
+        message: 'Statistics export report generation started. File will be sent to your email.',
+        recipientEmail: 'admin@finking.com',
+      };
+      (service.exportStatistics as jest.Mock).mockResolvedValue(mockResult);
+
+      const currentUser = {
+        jti: 'admin-jti',
+        sub: 1,
+        email: 'admin@finking.com',
+        role: 'Admin' as any,
+        type: 'access' as const,
+      };
+
+      const result = await controller.exportStatistics(queryDto, currentUser);
+
+      expect(service.exportStatistics).toHaveBeenCalledWith(queryDto, currentUser);
+      expect(result).toEqual(mockResult);
+    });
+  });
+});
