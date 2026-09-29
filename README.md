@@ -14,6 +14,8 @@ FinKing Backend is a RESTful API service for financial operations and reporting,
 
 Frontend Repository: [swe-rashad/FINKING-FRONTEND](https://github.com/swe-rashad/FINKING-FRONTEND)
 
+![FinKing Platform Dashboard](screenshots/dashboard-preview.png)
+
 ---
 
 ## Architecture Overview
