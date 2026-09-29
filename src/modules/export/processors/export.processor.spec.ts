@@ -46,8 +46,12 @@ describe('ExportProcessor', () => {
     };
 
     excelService = {
-      buildTransactionsWorkbook: jest.fn().mockResolvedValue(Buffer.from('transactions-excel')),
-      buildStatisticsWorkbook: jest.fn().mockResolvedValue(Buffer.from('statistics-excel')),
+      buildTransactionsWorkbook: jest
+        .fn()
+        .mockResolvedValue(Buffer.from('transactions-excel')),
+      buildStatisticsWorkbook: jest
+        .fn()
+        .mockResolvedValue(Buffer.from('statistics-excel')),
     };
 
     mailService = {

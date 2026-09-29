@@ -7,7 +7,7 @@ export const UserStatusEnum = {
 export const UsersRoles = {
   Admin: 'admin',
   Employee: 'employee',
-  Customer: 'customer'
+  Customer: 'customer',
 } as const;
 
 export type UserStatusEnumType =

@@ -4,4 +4,4 @@ import { PermissionType } from '../types/permission.type';
 export const PERMISSIONS_KEY = 'permissions';
 
 export const Permissions = (...permissions: PermissionType[]) =>
-    SetMetadata(PERMISSIONS_KEY, permissions);
+  SetMetadata(PERMISSIONS_KEY, permissions);

@@ -7,14 +7,19 @@ import { ExportStatisticsDto } from './dto/export-statistics.dto';
 import type { JwtPayload } from '@/modules/auth/types/auth.type';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { resolveDateRange, validateDateRange } from '@/common/utils/date-range.util';
+import {
+  resolveDateRange,
+  validateDateRange,
+} from '@/common/utils/date-range.util';
 import {
   CategoryDistributionStatisticsDataType,
-  RevenuePeriodEnum,
-  RevenuePeriodEnumType,
   RevenueStatisticsDataType,
 } from './types/statistics.type';
-import { TransactionTypeEnumType } from '@/modules/transactions/types';
+import {
+  CurrencyEnumType,
+  TransactionTypeEnumType,
+} from '@/modules/transactions/types';
+import { StatisticsCalculatorHelper } from './helpers/statistics-calculator.helper';
 
 @Injectable()
 export class StatisticsService {
@@ -29,36 +34,15 @@ export class StatisticsService {
     return resolveDateRange(payload);
   }
 
-  private getRevenuePeriod(
-    startDate: Date,
-    endDate: Date,
-  ): RevenuePeriodEnumType {
-    const diffInDays =
-      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-
-    if (diffInDays <= 31) {
-      return RevenuePeriodEnum.Weekly;
-    }
-
-    if (diffInDays <= 365) {
-      return RevenuePeriodEnum.Monthly;
-    }
-
-    return RevenuePeriodEnum.Yearly;
-  }
-
   async getRevenueOverview(
     payload: GetStatisticsDto,
   ): Promise<RevenueStatisticsDataType> {
     const { startDate, endDate } = this.getDateRange(payload);
-    const period = this.getRevenuePeriod(startDate, endDate);
-
-    const dateExpr =
-      period === RevenuePeriodEnum.Weekly
-        ? "TO_CHAR(DATE_TRUNC('week', transaction.dateOfOperation), 'YYYY-MM-DD')"
-        : period === RevenuePeriodEnum.Yearly
-          ? "TO_CHAR(transaction.dateOfOperation, 'YYYY')"
-          : "TO_CHAR(transaction.dateOfOperation, 'YYYY-MM')";
+    const period = StatisticsCalculatorHelper.getRevenuePeriod(
+      startDate,
+      endDate,
+    );
+    const dateExpr = StatisticsCalculatorHelper.getDateExpression(period);
 
     const rawData = await this.transactionRepository
       .createQueryBuilder('transaction')
@@ -73,13 +57,9 @@ export class StatisticsService {
       .addGroupBy('transaction.currency')
       .orderBy(dateExpr, 'ASC')
       .addOrderBy('transaction.currency', 'ASC')
-      .getRawMany<{ date: string; currency: any; value: string | number }>();
+      .getRawMany<{ date: string; currency: CurrencyEnumType; value: string | number }>();
 
-    const data = rawData.map((item) => ({
-      date: item.date,
-      currency: item.currency,
-      value: Number(Number(item.value).toFixed(2)),
-    }));
+    const data = StatisticsCalculatorHelper.formatRevenueData(rawData);
 
     return {
       period,
@@ -111,21 +91,7 @@ export class StatisticsService {
         transactionsCount: string | number;
       }>();
 
-    const data = rawData.map((item) => ({
-      type: item.type,
-      value: Number(Number(item.value).toFixed(2)),
-      transactionsCount: Number(item.transactionsCount),
-    }));
-
-    const totalTransactions = data.reduce(
-      (sum, item) => sum + item.transactionsCount,
-      0,
-    );
-
-    return {
-      totalTransactions,
-      data,
-    };
+    return StatisticsCalculatorHelper.formatCategoryDistributionData(rawData);
   }
 
   async getTotalRevenue(payload: GetStatisticsDto): Promise<{ value: number }> {
@@ -141,7 +107,7 @@ export class StatisticsService {
       .getRawOne<{ totalRevenue: string | number }>();
 
     return {
-      value: Number(Number(result?.totalRevenue ?? 0).toFixed(2)),
+      value: StatisticsCalculatorHelper.formatAmount(result?.totalRevenue),
     };
   }
 
@@ -163,7 +129,7 @@ export class StatisticsService {
       .getRawOne<{ totalTransactions: string | number }>();
 
     return {
-      value: Number(result?.totalTransactions ?? 0),
+      value: StatisticsCalculatorHelper.parseCount(result?.totalTransactions),
     };
   }
 
@@ -182,7 +148,7 @@ export class StatisticsService {
       .getRawOne<{ averageAmount: string | number }>();
 
     return {
-      value: Number(Number(result?.averageAmount ?? 0).toFixed(2)),
+      value: StatisticsCalculatorHelper.formatAmount(result?.averageAmount),
     };
   }
 
@@ -202,7 +168,7 @@ export class StatisticsService {
       .getRawOne<{ activeUsersCount: string | number }>();
 
     return {
-      value: Number(result?.activeUsersCount ?? 0),
+      value: StatisticsCalculatorHelper.parseCount(result?.activeUsersCount),
     };
   }
 
@@ -233,13 +199,16 @@ export class StatisticsService {
     await this.exportQueue.add('export-statistics', {
       recipientEmail,
       filters: {
-        startDate: dto.startDate ? new Date(dto.startDate).toISOString() : undefined,
+        startDate: dto.startDate
+          ? new Date(dto.startDate).toISOString()
+          : undefined,
         endDate: dto.endDate ? new Date(dto.endDate).toISOString() : undefined,
       },
     });
 
     return {
-      message: 'Statistics export report generation started. File will be sent to your email.',
+      message:
+        'Statistics export report generation started. File will be sent to your email.',
       recipientEmail,
     };
   }

@@ -148,7 +148,8 @@ describe('StatisticsController', () => {
   describe('exportStatistics', () => {
     it('should delegate to service.exportStatistics', async () => {
       const mockResult = {
-        message: 'Statistics export report generation started. File will be sent to your email.',
+        message:
+          'Statistics export report generation started. File will be sent to your email.',
         recipientEmail: 'admin@finking.com',
       };
       (service.exportStatistics as jest.Mock).mockResolvedValue(mockResult);
@@ -163,7 +164,10 @@ describe('StatisticsController', () => {
 
       const result = await controller.exportStatistics(queryDto, currentUser);
 
-      expect(service.exportStatistics).toHaveBeenCalledWith(queryDto, currentUser);
+      expect(service.exportStatistics).toHaveBeenCalledWith(
+        queryDto,
+        currentUser,
+      );
       expect(result).toEqual(mockResult);
     });
   });

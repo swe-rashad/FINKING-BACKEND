@@ -18,9 +18,9 @@ describe('TransactionsController', () => {
   const mockTransaction: Transactions = {
     transactionId: 101,
     amount: 150.5,
-    currency: 'usd' as CurrencyEnumType,
-    type: 'payment' as TransactionTypeEnumType,
-    status: 'completed' as TransactionStatusEnumType,
+    currency: 'usd',
+    type: 'payment',
+    status: 'completed',
     dateOfOperation: new Date(),
     sender: 'Alice',
     receiver: 'Bob',
@@ -102,14 +102,20 @@ describe('TransactionsController', () => {
     it('should delegate payload and currentUser to service.exportTransactions', async () => {
       const exportDto = { email: 'report@finking.com' };
       const expectedResponse = {
-        message: 'Export report generation started. File will be sent to your email.',
+        message:
+          'Export report generation started. File will be sent to your email.',
         recipientEmail: 'report@finking.com',
       };
-      (service.exportTransactions as jest.Mock).mockResolvedValue(expectedResponse);
+      (service.exportTransactions as jest.Mock).mockResolvedValue(
+        expectedResponse,
+      );
 
       const result = await controller.exportTransactions(exportDto, mockUser);
 
-      expect(service.exportTransactions).toHaveBeenCalledWith(exportDto, mockUser);
+      expect(service.exportTransactions).toHaveBeenCalledWith(
+        exportDto,
+        mockUser,
+      );
       expect(result).toEqual(expectedResponse);
     });
   });

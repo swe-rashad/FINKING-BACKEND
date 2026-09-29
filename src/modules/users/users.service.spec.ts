@@ -282,7 +282,8 @@ describe('UsersService', () => {
 
   describe('getCurrentUser', () => {
     const payload: JwtPayload = {
-      jti: 'test-jti-1', sub: 1,
+      jti: 'test-jti-1',
+      sub: 1,
       email: 'john.doe@example.com',
       merchantId: 1,
       merchantName: 'Test Merchant',
@@ -314,7 +315,8 @@ describe('UsersService', () => {
 
   describe('updateUser', () => {
     const payload: JwtPayload = {
-      jti: 'test-jti-1', sub: 1,
+      jti: 'test-jti-1',
+      sub: 1,
       email: 'john.doe@example.com',
       merchantId: 1,
       merchantName: 'Test Merchant',
@@ -374,27 +376,30 @@ describe('UsersService', () => {
     it('should throw NotFoundException if user to block is not found', async () => {
       (repository.findOne as jest.Mock).mockResolvedValue(null);
 
-      await expect(
-        service.blockUser(999, adminPayload),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.blockUser(999, adminPayload)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ForbiddenException if user to block is an admin', async () => {
       const adminTarget = { ...targetEmployee, role: UsersRoles.Admin };
       (repository.findOne as jest.Mock).mockResolvedValue(adminTarget);
 
-      await expect(
-        service.blockUser(2, adminPayload),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.blockUser(2, adminPayload)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw BadRequestException if user is already blocked', async () => {
-      const blockedTarget = { ...targetEmployee, status: UserStatusEnum.Blocked };
+      const blockedTarget = {
+        ...targetEmployee,
+        status: UserStatusEnum.Blocked,
+      };
       (repository.findOne as jest.Mock).mockResolvedValue(blockedTarget);
 
-      await expect(
-        service.blockUser(2, adminPayload),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.blockUser(2, adminPayload)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should block user and update status in database without accessToken', async () => {

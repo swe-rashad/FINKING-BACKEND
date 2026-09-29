@@ -19,7 +19,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   constructor(
     private reflector: Reflector,
     private readonly blocklistService: BlocklistService,
-    @Optional() @Inject(UsersService) private readonly usersService?: UsersService,
+    @Optional()
+    @Inject(UsersService)
+    private readonly usersService?: UsersService,
   ) {
     super();
   }
@@ -52,7 +54,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     }
 
     if (user?.sub && this.usersService) {
-      const dbUser = await this.usersService.getUserDetail(user.sub).catch(() => null);
+      const dbUser = await this.usersService
+        .getUserDetail(user.sub)
+        .catch(() => null);
       if (dbUser && dbUser.status === UserStatusEnum.Blocked) {
         throw new ForbiddenException('Your account has been blocked');
       }

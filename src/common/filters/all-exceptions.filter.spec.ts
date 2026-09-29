@@ -27,7 +27,10 @@ describe('AllExceptionsFilter', () => {
   });
 
   it('should format HttpException correctly with matching statusCode', () => {
-    const exception = new HttpException('Forbidden resource', HttpStatus.FORBIDDEN);
+    const exception = new HttpException(
+      'Forbidden resource',
+      HttpStatus.FORBIDDEN,
+    );
 
     filter.catch(exception, mockHost);
 
@@ -44,7 +47,9 @@ describe('AllExceptionsFilter', () => {
 
     filter.catch(rawError, mockHost);
 
-    expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    expect(mockResponse.status).toHaveBeenCalledWith(
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
     expect(mockResponse.json).toHaveBeenCalledWith({
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       message: 'Internal server error',

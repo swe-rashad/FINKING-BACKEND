@@ -26,4 +26,4 @@ import * as path from 'path';
     }),
   ],
 })
-export class DatabaseModule { }
+export class DatabaseModule {}

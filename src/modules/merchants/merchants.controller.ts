@@ -20,7 +20,7 @@ import { UsersRoles } from '@/modules/users/types/users.type';
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('merchants')
 export class MerchantsController {
-  constructor(private readonly merchantsService: MerchantsService) { }
+  constructor(private readonly merchantsService: MerchantsService) {}
 
   @Get('/current')
   @Roles(UsersRoles.Admin, UsersRoles.Employee)

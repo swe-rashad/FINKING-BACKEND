@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -23,13 +17,21 @@ import {
   calculatePagination,
   createPaginatedResponse,
 } from '@/common/utils/pagination.util';
-import { UserNotFoundException } from './exceptions/userNotFound.exception';
+import {
+  AdminRoleAssignmentException,
+  CannotBlockAdminException,
+  UserAlreadyBlockedException,
+  UserEmailAlreadyExistsException,
+  UserNotFoundException,
+} from '@/common/exceptions';
 import { JwtPayload } from '@/modules/auth/types/auth.type';
 import { GetUsersDto } from './dto/get-users.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersRoles, UserStatusEnum } from './types/users.type';
 import { BlocklistService } from '@/common/services/blocklist.service';
 import { JwtService } from '@nestjs/jwt';
+import { ensure } from '@/common/utils/assertion.util';
+import { calculateTokenRemainingMs } from '@/modules/auth/utils/token.util';
 
 @Injectable()
 export class UsersService {
@@ -38,7 +40,7 @@ export class UsersService {
     private readonly configService: ConfigService,
     private readonly blocklistService: BlocklistService,
     private readonly jwtService: JwtService,
-  ) { }
+  ) {}
 
   async findUserByEmail(email: string): Promise<User | null> {
     return this.usersRepository.findOne({
@@ -51,8 +53,8 @@ export class UsersService {
 
   async getUserByEmail(email: string): Promise<User> {
     const user = await this.findUserByEmail(email);
-    if (user) return user;
-    throw new UserNotFoundException();
+    ensure(user, new UserNotFoundException());
+    return user;
   }
 
   async getUsers(
@@ -85,12 +87,13 @@ export class UsersService {
       baseWhere.merchantId = merchantId;
     }
 
-    const where: FindOptionsWhere<User> | FindOptionsWhere<User>[] = payload.name
-      ? [
-        { ...baseWhere, name: ILike(`%${payload.name}%`) },
-        { ...baseWhere, lastname: ILike(`%${payload.name}%`) },
-      ]
-      : baseWhere;
+    const where: FindOptionsWhere<User> | FindOptionsWhere<User>[] =
+      payload.name
+        ? [
+            { ...baseWhere, name: ILike(`%${payload.name}%`) },
+            { ...baseWhere, lastname: ILike(`%${payload.name}%`) },
+          ]
+        : baseWhere;
 
     const [users, total] = await this.usersRepository.findAndCount({
       where,
@@ -136,13 +139,11 @@ export class UsersService {
     currentUser?: JwtPayload,
   ): Promise<User> {
     const existing = await this.findUserByEmail(payload.email);
-    if (existing) {
-      throw new ConflictException('User with this email already exists');
-    }
-
-    if (payload.role === UsersRoles.Admin) {
-      throw new BadRequestException('Cannot create user with admin role');
-    }
+    ensure(!existing, new UserEmailAlreadyExistsException());
+    ensure(
+      payload.role !== UsersRoles.Admin,
+      new AdminRoleAssignmentException('Cannot create user with admin role'),
+    );
 
     const salt = Number(this.configService.get<number>('salt')) || 10;
     const hashPass = await bcrypt.hash(payload.password, salt);
@@ -180,8 +181,8 @@ export class UsersService {
         merchant: true,
       },
     });
-    if (user) return user;
-    throw new UserNotFoundException();
+    ensure(user, new UserNotFoundException());
+    return user;
   }
 
   async deleteUser(
@@ -210,9 +211,8 @@ export class UsersService {
       },
     });
 
-    if (user) return user;
-
-    throw new UserNotFoundException();
+    ensure(user, new UserNotFoundException());
+    return user;
   }
 
   async updateUser(
@@ -220,9 +220,10 @@ export class UsersService {
     currentUser: JwtPayload,
     payload: UpdateUserDto,
   ): Promise<UpdateResult> {
-    if (payload.role === UsersRoles.Admin) {
-      throw new BadRequestException('Cannot change role to admin');
-    }
+    ensure(
+      payload.role !== UsersRoles.Admin,
+      new AdminRoleAssignmentException('Cannot change role to admin'),
+    );
 
     const merchantId = currentUser?.merchantId;
     const whereConditions: FindOptionsWhere<User> = { id };
@@ -244,17 +245,12 @@ export class UsersService {
     }
 
     const user = await this.usersRepository.findOne({ where: whereConditions });
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    if (user.role === UsersRoles.Admin) {
-      throw new ForbiddenException('Cannot block an admin user');
-    }
-
-    if (user.status === UserStatusEnum.Blocked) {
-      throw new BadRequestException('User is already blocked');
-    }
+    ensure(user, new UserNotFoundException());
+    ensure(user.role !== UsersRoles.Admin, new CannotBlockAdminException());
+    ensure(
+      user.status !== UserStatusEnum.Blocked,
+      new UserAlreadyBlockedException(),
+    );
 
     await this.usersRepository.update(whereConditions, {
       status: UserStatusEnum.Blocked,
@@ -266,15 +262,16 @@ export class UsersService {
         const decoded = this.jwtService.verify<JwtPayload>(accessToken, {
           secret: accessSecret,
         });
-        if (decoded?.jti && decoded?.exp) {
-          const nowSec = Math.floor(Date.now() / 1000);
-          const remainingMs = (decoded.exp - nowSec) * 1000;
+        if (decoded?.jti) {
+          const remainingMs = calculateTokenRemainingMs(decoded.exp);
           if (remainingMs > 0) {
-            await this.blocklistService.addToBlocklist(decoded.jti, remainingMs);
+            await this.blocklistService.addToBlocklist(
+              decoded.jti,
+              remainingMs,
+            );
           }
         }
-      } catch {
-      }
+      } catch {}
     }
   }
 }

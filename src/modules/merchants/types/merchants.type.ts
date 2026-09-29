@@ -7,4 +7,3 @@ export const MerchantStatusEnum = {
 
 export type MerchantStatusEnumType =
   (typeof MerchantStatusEnum)[keyof typeof MerchantStatusEnum];
-

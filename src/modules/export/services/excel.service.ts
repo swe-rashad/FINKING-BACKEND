@@ -3,15 +3,23 @@ import ExcelJS from 'exceljs';
 import { Transactions } from '@/modules/transactions/entities/transaction.entity';
 
 export interface StatisticsExportPayload {
-  revenueOverview: { period: string; data: { date?: string; currency: string; value: number }[] };
-  categoryDistribution: { totalTransactions: number; data: { type: string; value: number; transactionsCount: number }[] };
+  revenueOverview: {
+    period: string;
+    data: { date?: string; currency: string; value: number }[];
+  };
+  categoryDistribution: {
+    totalTransactions: number;
+    data: { type: string; value: number; transactionsCount: number }[];
+  };
   totalRevenue: number;
   totalTransactions: number;
 }
 
 @Injectable()
 export class ExcelService {
-  async buildTransactionsWorkbook(transactions: Transactions[]): Promise<Buffer> {
+  async buildTransactionsWorkbook(
+    transactions: Transactions[],
+  ): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'FinKing Operations';
     workbook.created = new Date();
@@ -48,7 +56,10 @@ export class ExcelService {
         status: tx.status,
         merchantName: tx.merchantName,
         dateOfOperation: tx.dateOfOperation
-          ? new Date(tx.dateOfOperation).toISOString().replace('T', ' ').substring(0, 19)
+          ? new Date(tx.dateOfOperation)
+              .toISOString()
+              .replace('T', ' ')
+              .substring(0, 19)
           : '',
       });
       row.getCell('amount').numFmt = '#,##0.00';
@@ -58,7 +69,9 @@ export class ExcelService {
     return Buffer.from(buffer);
   }
 
-  async buildStatisticsWorkbook(payload: StatisticsExportPayload): Promise<Buffer> {
+  async buildStatisticsWorkbook(
+    payload: StatisticsExportPayload,
+  ): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'FinKing Analytics';
     workbook.created = new Date();
@@ -74,8 +87,14 @@ export class ExcelService {
       pattern: 'solid',
       fgColor: { argb: 'FF0284C7' },
     };
-    summarySheet.addRow({ metric: 'Total Revenue', value: payload.totalRevenue });
-    summarySheet.addRow({ metric: 'Total Transactions Count', value: payload.totalTransactions });
+    summarySheet.addRow({
+      metric: 'Total Revenue',
+      value: payload.totalRevenue,
+    });
+    summarySheet.addRow({
+      metric: 'Total Transactions Count',
+      value: payload.totalTransactions,
+    });
 
     const revenueSheet = workbook.addWorksheet('Revenue Overview');
     revenueSheet.columns = [

@@ -37,14 +37,18 @@ describe('RolesGuard', () => {
   });
 
   it('should deny access if user is not present in request', () => {
-    (reflector.getAllAndOverride as jest.Mock).mockReturnValue([UsersRoles.Employee]);
+    (reflector.getAllAndOverride as jest.Mock).mockReturnValue([
+      UsersRoles.Employee,
+    ]);
     const context = createMockContext(undefined);
 
     expect(guard.canActivate(context)).toBe(false);
   });
 
   it('should always allow access if user is Admin', () => {
-    (reflector.getAllAndOverride as jest.Mock).mockReturnValue([UsersRoles.Employee]);
+    (reflector.getAllAndOverride as jest.Mock).mockReturnValue([
+      UsersRoles.Employee,
+    ]);
     const context = createMockContext({ role: UsersRoles.Admin });
 
     expect(guard.canActivate(context)).toBe(true);
@@ -61,7 +65,9 @@ describe('RolesGuard', () => {
   });
 
   it('should deny access if user role is not in required roles', () => {
-    (reflector.getAllAndOverride as jest.Mock).mockReturnValue([UsersRoles.Customer]);
+    (reflector.getAllAndOverride as jest.Mock).mockReturnValue([
+      UsersRoles.Customer,
+    ]);
     const context = createMockContext({ role: UsersRoles.Employee });
 
     expect(guard.canActivate(context)).toBe(false);

@@ -1,5 +1,9 @@
 import { ExcelService } from './excel.service';
-import { currencyEnum, transactionStatusEnum, transactionTypeEnum } from '@/modules/transactions/types';
+import {
+  currencyEnum,
+  transactionStatusEnum,
+  transactionTypeEnum,
+} from '@/modules/transactions/types';
 
 describe('ExcelService', () => {
   let service: ExcelService;

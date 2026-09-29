@@ -76,7 +76,8 @@ describe('AuthController', () => {
   describe('getRefreshToken', () => {
     it('should delegate refresh token user payload to authService.refreshToken', async () => {
       const userPayload: JwtPayload = {
-        jti: 'test-jti-1', sub: 1,
+        jti: 'test-jti-1',
+        sub: 1,
         email: 'test@merchant.com',
         merchantId: 1,
         merchantName: 'Test Merchant',

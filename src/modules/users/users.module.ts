@@ -7,10 +7,7 @@ import { BlocklistService } from '@/common/services/blocklist.service';
 import { JwtModule } from '@nestjs/jwt';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([User]),
-    JwtModule,
-  ],
+  imports: [TypeOrmModule.forFeature([User]), JwtModule],
   controllers: [UsersController],
   providers: [UsersService, BlocklistService],
   exports: [UsersService],

@@ -73,8 +73,6 @@ import { TraceIdMiddleware } from './common/middlewares/traceId.middleware';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(TraceIdMiddleware)
-      .forRoutes('*');
+    consumer.apply(TraceIdMiddleware).forRoutes('*');
   }
 }

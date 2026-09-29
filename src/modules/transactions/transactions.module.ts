@@ -14,10 +14,7 @@ import { BullModule } from '@nestjs/bullmq';
     }),
   ],
   controllers: [TransactionsController],
-  providers: [
-    TransactionsService,
-    DatabaseTransactionProvider,
-  ],
+  providers: [TransactionsService, DatabaseTransactionProvider],
   exports: [TransactionsService, DatabaseTransactionProvider],
 })
 export class TransactionsModule {}

@@ -21,13 +21,17 @@ describe('date-range.util', () => {
           startField: 'startDate',
           endField: 'endDate',
         }),
-      ).toThrow(new BadRequestException('endDate cannot be earlier than startDate'));
+      ).toThrow(
+        new BadRequestException('endDate cannot be earlier than startDate'),
+      );
     });
 
     it('should throw BadRequestException if date range exceeds maxDays', () => {
       expect(() =>
         validateDateRange('2024-01-01', '2025-01-10', { maxDays: 365 }),
-      ).toThrow(new BadRequestException('Date range cannot exceed 1 year (365 days)'));
+      ).toThrow(
+        new BadRequestException('Date range cannot exceed 1 year (365 days)'),
+      );
     });
 
     it('should ignore when dates are undefined', () => {

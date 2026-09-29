@@ -8,7 +8,7 @@ export const ROLES_KEY_GUARD = ROLES_KEY;
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) { }
+  constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
     const requiredRoles = this.reflector.getAllAndOverride<UserRolesEnumType[]>(

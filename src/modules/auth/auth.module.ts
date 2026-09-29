@@ -21,4 +21,3 @@ import { BlocklistService } from '@/common/services/blocklist.service';
   exports: [PassportModule, JwtStrategy, JwtRefreshStrategy],
 })
 export class AuthModule {}
-

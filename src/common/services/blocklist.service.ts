@@ -6,14 +6,10 @@ export const BLOCKLIST_PREFIX = 'blocklist:token:';
 
 @Injectable()
 export class BlocklistService {
-  constructor(@Inject(CACHE_MANAGER) private readonly cacheManager: Cache) { }
+  constructor(@Inject(CACHE_MANAGER) private readonly cacheManager: Cache) {}
 
   async addToBlocklist(jti: string, ttlMs: number): Promise<void> {
-    await this.cacheManager.set(
-      `${BLOCKLIST_PREFIX}${jti}`,
-      '1',
-      ttlMs,
-    );
+    await this.cacheManager.set(`${BLOCKLIST_PREFIX}${jti}`, '1', ttlMs);
   }
 
   async isBlocked(jti: string): Promise<boolean> {

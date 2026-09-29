@@ -25,12 +25,16 @@ export function validateDateRange(
   }
 
   if (to < from) {
-    throw new BadRequestException(`${endName} cannot be earlier than ${startName}`);
+    throw new BadRequestException(
+      `${endName} cannot be earlier than ${startName}`,
+    );
   }
 
   const diffDays = (to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24);
   if (diffDays > maxDays) {
-    throw new BadRequestException(`Date range cannot exceed 1 year (${maxDays} days)`);
+    throw new BadRequestException(
+      `Date range cannot exceed 1 year (${maxDays} days)`,
+    );
   }
 }
 
@@ -41,7 +45,9 @@ export function resolveDateRange(
   const endDate = payload?.endDate ? new Date(payload.endDate) : new Date();
   const startDate = payload?.startDate
     ? new Date(payload.startDate)
-    : new Date(new Date(endDate).setFullYear(endDate.getFullYear() - defaultYears));
+    : new Date(
+        new Date(endDate).setFullYear(endDate.getFullYear() - defaultYears),
+      );
 
   if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
     throw new BadRequestException('Invalid date provided');

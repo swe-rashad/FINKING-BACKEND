@@ -7,9 +7,9 @@ describe('Public decorator', () => {
   it('should set isPublic metadata to true on method', () => {
     class TestController {
       @Public()
-      publicMethod() { }
+      publicMethod() {}
 
-      protectedMethod() { }
+      protectedMethod() {}
     }
 
     const isPublic = reflector.get<boolean>(
@@ -27,7 +27,7 @@ describe('Public decorator', () => {
 
   it('should set isPublic metadata to true on class', () => {
     @Public()
-    class TestController { }
+    class TestController {}
 
     const isPublic = reflector.get<boolean>(IS_PUBLIC_KEY, TestController);
 

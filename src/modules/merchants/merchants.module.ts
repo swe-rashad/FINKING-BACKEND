@@ -12,4 +12,3 @@ import { MerchantsService } from './merchants.service';
   exports: [MerchantsService, TypeOrmModule],
 })
 export class MerchantsModule {}
-

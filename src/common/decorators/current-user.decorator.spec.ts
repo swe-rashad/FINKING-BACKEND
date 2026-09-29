@@ -3,7 +3,9 @@ import { ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { JwtPayload, JwtTokenTypeEnum } from '@/modules/auth/types/auth.type';
 
-function getParamDecoratorFactory(decorator: (...args: unknown[]) => ParameterDecorator) {
+function getParamDecoratorFactory(
+  decorator: (...args: unknown[]) => ParameterDecorator,
+) {
   class TestController {
     testMethod(@decorator() _user: unknown) {}
   }
@@ -22,7 +24,8 @@ describe('CurrentUser decorator', () => {
     const factory = getParamDecoratorFactory(CurrentUser);
 
     const mockPayload: JwtPayload = {
-      jti: 'test-jti-1', sub: 1,
+      jti: 'test-jti-1',
+      sub: 1,
       email: 'user@example.com',
       role: 'admin',
       type: JwtTokenTypeEnum.Access,

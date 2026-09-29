@@ -1,9 +1,4 @@
-import {
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
@@ -22,6 +17,18 @@ import { MerchantStatusEnum } from '../merchants/types/merchants.type';
 import { UsersRoles, UserStatusEnum } from '../users/types/users.type';
 import { Merchant } from '../merchants/entities/merchant.entity';
 import { BlocklistService } from '@/common/services/blocklist.service';
+import { ensure } from '@/common/utils/assertion.util';
+import { calculateTokenRemainingMs } from './utils/token.util';
+import {
+  AuthUserNotFoundException,
+  InvalidCredentialsException,
+  InvalidTokenTypeException,
+  MerchantNameAlreadyExistsException,
+  PasswordChangeRequiredException,
+  TokenRevokedException,
+  UserBlockedException,
+  UserEmailAlreadyExistsException,
+} from '@/common/exceptions';
 
 @Injectable()
 export class AuthService {
@@ -32,6 +39,14 @@ export class AuthService {
     private readonly dataSource: DataSource,
     private readonly blocklistService: BlocklistService,
   ) { }
+
+  private async revokeToken(jti?: string, exp?: number): Promise<void> {
+    if (!jti) return;
+    const remainingMs = calculateTokenRemainingMs(exp);
+    if (remainingMs > 0) {
+      await this.blocklistService.addToBlocklist(jti, remainingMs);
+    }
+  }
 
   private async generateTokens(user: User): Promise<SuccessAuthResponse> {
     const jti = randomUUID();
@@ -66,10 +81,7 @@ export class AuthService {
 
   async signUp(payload: SignUpDto): Promise<SuccessAuthResponse> {
     const existingUser = await this.usersService.findUserByEmail(payload.email);
-
-    if (existingUser) {
-      throw new ConflictException('User with this email already exists');
-    }
+    ensure(!existingUser, new UserEmailAlreadyExistsException());
 
     const user = await this.dataSource.transaction(async (manager) => {
       const merchantRepo = manager.getRepository(Merchant);
@@ -78,9 +90,8 @@ export class AuthService {
       const existingMerchant = await merchantRepo.findOne({
         where: { merchantName: payload.merchantName },
       });
-      if (existingMerchant) {
-        throw new ConflictException('Merchant with this name already exists');
-      }
+      ensure(!existingMerchant, new MerchantNameAlreadyExistsException());
+
       const merchant = merchantRepo.create({
         merchantName: payload.merchantName,
         email: payload.email,
@@ -113,59 +124,36 @@ export class AuthService {
 
   async signIn(payload: SignInPayload): Promise<SuccessAuthResponse> {
     const user = await this.usersService.findUserByEmail(payload.email);
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
+    const isPasswordMatching = user
+      ? await bcrypt.compare(payload.password, user.password)
+      : false;
 
-    const isPasswordMatching = await bcrypt.compare(
-      payload.password,
-      user.password,
+    ensure(user && isPasswordMatching, new InvalidCredentialsException());
+    ensure(user.status !== UserStatusEnum.Blocked, new UserBlockedException());
+    ensure(
+      user.status !== UserStatusEnum.ForceChangePassword,
+      new PasswordChangeRequiredException(),
     );
-    if (!isPasswordMatching) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    if (user.status === UserStatusEnum.Blocked) {
-      throw new ForbiddenException('Your account has been blocked');
-    }
-
-    if (user.status === UserStatusEnum.ForceChangePassword) {
-      throw new ForbiddenException('You must change your password before continuing');
-    }
 
     return await this.generateTokens(user);
   }
 
   async refreshToken(payload: JwtPayload): Promise<SuccessAuthResponse> {
-    if (payload.type !== JwtTokenTypeEnum.Refresh) {
-      throw new UnauthorizedException('Invalid token type');
-    }
+    ensure(
+      payload.type === JwtTokenTypeEnum.Refresh,
+      new InvalidTokenTypeException(),
+    );
 
     if (payload.jti) {
       const isRevoked = await this.blocklistService.isBlocked(payload.jti);
-      if (isRevoked) {
-        throw new UnauthorizedException('Refresh token has been revoked');
-      }
+      ensure(!isRevoked, new TokenRevokedException());
     }
 
     const user = await this.usersService.findUserByEmail(payload.email);
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
+    ensure(user, new AuthUserNotFoundException());
+    ensure(user.status !== UserStatusEnum.Blocked, new UserBlockedException());
 
-    if (user.status === UserStatusEnum.Blocked) {
-      throw new ForbiddenException('Your account has been blocked');
-    }
-
-    if (payload.jti) {
-      const nowSec = Math.floor(Date.now() / 1000);
-      const remainingMs = payload.exp
-        ? Math.max((payload.exp - nowSec) * 1000, 0)
-        : 7 * 24 * 60 * 60 * 1000;
-      if (remainingMs > 0) {
-        await this.blocklistService.addToBlocklist(payload.jti, remainingMs);
-      }
-    }
+    await this.revokeToken(payload.jti, payload.exp);
 
     return await this.generateTokens(user);
   }

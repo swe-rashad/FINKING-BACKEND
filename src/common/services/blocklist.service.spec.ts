@@ -51,7 +51,9 @@ describe('BlocklistService', () => {
 
       const result = await service.isBlocked(jti);
 
-      expect(cacheManager.get).toHaveBeenCalledWith(`${BLOCKLIST_PREFIX}${jti}`);
+      expect(cacheManager.get).toHaveBeenCalledWith(
+        `${BLOCKLIST_PREFIX}${jti}`,
+      );
       expect(result).toBe(true);
     });
 
@@ -61,7 +63,9 @@ describe('BlocklistService', () => {
 
       const result = await service.isBlocked(jti);
 
-      expect(cacheManager.get).toHaveBeenCalledWith(`${BLOCKLIST_PREFIX}${jti}`);
+      expect(cacheManager.get).toHaveBeenCalledWith(
+        `${BLOCKLIST_PREFIX}${jti}`,
+      );
       expect(result).toBe(false);
     });
 

@@ -73,8 +73,12 @@ describe('AuthService', () => {
         };
       }
       return {
-        create: jest.fn().mockReturnValue({ ...mockUser, role: UsersRoles.Admin }),
-        save: jest.fn().mockResolvedValue({ ...mockUser, role: UsersRoles.Admin }),
+        create: jest
+          .fn()
+          .mockReturnValue({ ...mockUser, role: UsersRoles.Admin }),
+        save: jest
+          .fn()
+          .mockResolvedValue({ ...mockUser, role: UsersRoles.Admin }),
       };
     }),
   };
@@ -164,7 +168,9 @@ describe('AuthService', () => {
 
     it('should throw ForbiddenException if user status is Blocked', async () => {
       const blockedUser = { ...mockUser, status: UserStatusEnum.Blocked };
-      (usersService.findUserByEmail as jest.Mock).mockResolvedValue(blockedUser);
+      (usersService.findUserByEmail as jest.Mock).mockResolvedValue(
+        blockedUser,
+      );
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       await expect(authService.signIn(payload)).rejects.toThrow(
@@ -177,11 +183,15 @@ describe('AuthService', () => {
         ...mockUser,
         status: UserStatusEnum.ForceChangePassword,
       };
-      (usersService.findUserByEmail as jest.Mock).mockResolvedValue(forceChangeUser);
+      (usersService.findUserByEmail as jest.Mock).mockResolvedValue(
+        forceChangeUser,
+      );
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       await expect(authService.signIn(payload)).rejects.toThrow(
-        new ForbiddenException('You must change your password before continuing'),
+        new ForbiddenException(
+          'You must change your password before continuing',
+        ),
       );
     });
 
@@ -290,7 +300,9 @@ describe('AuthService', () => {
     it('should throw ForbiddenException if user status is Blocked', async () => {
       blocklistService.isBlocked.mockResolvedValue(false);
       const blockedUser = { ...mockUser, status: UserStatusEnum.Blocked };
-      (usersService.findUserByEmail as jest.Mock).mockResolvedValue(blockedUser);
+      (usersService.findUserByEmail as jest.Mock).mockResolvedValue(
+        blockedUser,
+      );
 
       await expect(
         authService.refreshToken(validRefreshPayload),

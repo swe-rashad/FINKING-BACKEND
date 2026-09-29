@@ -24,7 +24,8 @@ describe('MerchantsController', () => {
   };
 
   const mockJwtPayload: JwtPayload = {
-    jti: 'test-jti-1', sub: 1,
+    jti: 'test-jti-1',
+    sub: 1,
     email: 'test@merchant.com',
     merchantId: 1,
     merchantName: 'Test Merchant',

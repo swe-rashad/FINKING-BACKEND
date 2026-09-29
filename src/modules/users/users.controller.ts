@@ -36,7 +36,7 @@ class BlockUserDto {
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('users')
 export class UsersController {
-  constructor(private readonly userService: UsersService) { }
+  constructor(private readonly userService: UsersService) {}
 
   @Post('/create')
   @Roles(UsersRoles.Admin, UsersRoles.Employee)

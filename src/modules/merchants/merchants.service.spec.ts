@@ -162,7 +162,8 @@ describe('MerchantsService', () => {
 
   describe('getCurrentMerchant', () => {
     const jwtPayload: JwtPayload = {
-      jti: 'test-jti-1', sub: 1,
+      jti: 'test-jti-1',
+      sub: 1,
       email: 'test@merchant.com',
       merchantId: 1,
       merchantName: 'Test Merchant',
@@ -194,7 +195,8 @@ describe('MerchantsService', () => {
 
   describe('updateCurrentMerchant', () => {
     const jwtPayload: JwtPayload = {
-      jti: 'test-jti-1', sub: 1,
+      jti: 'test-jti-1',
+      sub: 1,
       email: 'test@merchant.com',
       merchantId: 1,
       merchantName: 'Test Merchant',

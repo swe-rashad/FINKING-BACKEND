@@ -52,7 +52,8 @@ export class ExportProcessor extends WorkerHost {
 
     if (filters?.sender) where.sender = ILike(`%${filters.sender}%`);
     if (filters?.receiver) where.receiver = ILike(`%${filters.receiver}%`);
-    if (filters?.merchantName) where.merchantName = ILike(`%${filters.merchantName}%`);
+    if (filters?.merchantName)
+      where.merchantName = ILike(`%${filters.merchantName}%`);
     if (filters?.currency) where.currency = filters.currency;
     if (filters?.type) where.type = filters.type;
     if (filters?.status) where.status = filters.status;
@@ -74,7 +75,8 @@ export class ExportProcessor extends WorkerHost {
       take: 10000,
     });
 
-    const fileBuffer = await this.excelService.buildTransactionsWorkbook(transactions);
+    const fileBuffer =
+      await this.excelService.buildTransactionsWorkbook(transactions);
 
     const dateRangeText =
       filters?.dateFrom && filters?.dateTo
@@ -92,7 +94,10 @@ export class ExportProcessor extends WorkerHost {
       description:
         'Your requested transactions dataset has been compiled and is attached to this email as a Microsoft Excel (.xlsx) spreadsheet.',
       summaryRows: [
-        { label: 'Total Records Exported', value: transactions.length.toLocaleString() },
+        {
+          label: 'Total Records Exported',
+          value: transactions.length.toLocaleString(),
+        },
         { label: 'Date Range', value: dateRangeText },
         { label: 'Generated At (UTC)', value: new Date().toUTCString() },
         { label: 'Format', value: 'Microsoft Excel (.xlsx)' },
@@ -119,13 +124,17 @@ export class ExportProcessor extends WorkerHost {
       endDate: filters?.endDate ? new Date(filters.endDate) : undefined,
     };
 
-    const [revenueOverview, categoryDistribution, totalRevenueResult, totalTransactionsResult] =
-      await Promise.all([
-        this.statisticsService.getRevenueOverview(statsDto),
-        this.statisticsService.getCategoryDistribution(statsDto),
-        this.statisticsService.getTotalRevenue(statsDto),
-        this.statisticsService.getTotalTransactions(statsDto),
-      ]);
+    const [
+      revenueOverview,
+      categoryDistribution,
+      totalRevenueResult,
+      totalTransactionsResult,
+    ] = await Promise.all([
+      this.statisticsService.getRevenueOverview(statsDto),
+      this.statisticsService.getCategoryDistribution(statsDto),
+      this.statisticsService.getTotalRevenue(statsDto),
+      this.statisticsService.getTotalTransactions(statsDto),
+    ]);
 
     const fileBuffer = await this.excelService.buildStatisticsWorkbook({
       revenueOverview,

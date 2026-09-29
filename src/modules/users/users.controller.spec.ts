@@ -27,7 +27,8 @@ describe('UsersController', () => {
   };
 
   const mockMerchantJwt: JwtPayload = {
-    jti: 'test-jti-10', sub: 10,
+    jti: 'test-jti-10',
+    sub: 10,
     email: 'admin@merchant.com',
     merchantId: 10,
     merchantName: 'Test Merchant',
@@ -79,7 +80,10 @@ describe('UsersController', () => {
 
       const result = await controller.createUser(createDto, mockMerchantJwt);
 
-      expect(service.createUser).toHaveBeenCalledWith(createDto, mockMerchantJwt);
+      expect(service.createUser).toHaveBeenCalledWith(
+        createDto,
+        mockMerchantJwt,
+      );
       expect(result).toEqual(mockUser);
     });
   });
@@ -166,7 +170,11 @@ describe('UsersController', () => {
         accessToken: 'some-token',
       });
 
-      expect(service.blockUser).toHaveBeenCalledWith(2, mockMerchantJwt, 'some-token');
+      expect(service.blockUser).toHaveBeenCalledWith(
+        2,
+        mockMerchantJwt,
+        'some-token',
+      );
       expect(result).toBeUndefined();
     });
   });

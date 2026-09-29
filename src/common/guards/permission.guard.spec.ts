@@ -16,8 +16,8 @@ describe('PermissionsGuard', () => {
 
   const createMockContext = (user?: any): ExecutionContext => {
     return {
-      getHandler: () => () => { },
-      getClass: () => class { },
+      getHandler: () => () => {},
+      getClass: () => class {},
       switchToHttp: () => ({
         getRequest: () => ({ user }),
       }),
@@ -26,7 +26,10 @@ describe('PermissionsGuard', () => {
 
   it('should allow access if no permissions are required', () => {
     (reflector.getAllAndOverride as jest.Mock).mockReturnValue(undefined);
-    const context = createMockContext({ role: UsersRoles.Employee, permissions: [] });
+    const context = createMockContext({
+      role: UsersRoles.Employee,
+      permissions: [],
+    });
 
     expect(guard.canActivate(context)).toBe(true);
   });
@@ -39,15 +42,25 @@ describe('PermissionsGuard', () => {
   });
 
   it('should allow access if user is Admin regardless of permissions', () => {
-    (reflector.getAllAndOverride as jest.Mock).mockReturnValue(['users:delete']);
-    const context = createMockContext({ role: UsersRoles.Admin, permissions: [] });
+    (reflector.getAllAndOverride as jest.Mock).mockReturnValue([
+      'users:delete',
+    ]);
+    const context = createMockContext({
+      role: UsersRoles.Admin,
+      permissions: [],
+    });
 
     expect(guard.canActivate(context)).toBe(true);
   });
 
   it('should allow access if user is Customer regardless of permissions', () => {
-    (reflector.getAllAndOverride as jest.Mock).mockReturnValue(['transactions:read']);
-    const context = createMockContext({ role: UsersRoles.Customer, permissions: [] });
+    (reflector.getAllAndOverride as jest.Mock).mockReturnValue([
+      'transactions:read',
+    ]);
+    const context = createMockContext({
+      role: UsersRoles.Customer,
+      permissions: [],
+    });
 
     expect(guard.canActivate(context)).toBe(true);
   });

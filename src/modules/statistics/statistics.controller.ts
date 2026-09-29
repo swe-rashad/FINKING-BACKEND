@@ -1,4 +1,11 @@
-import { Body, Controller, Get, Post, Query, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  UseInterceptors,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { StatisticsService } from './statistics.service';
 import { GetStatisticsDto } from './dto/get-statistics.dto';
@@ -18,7 +25,7 @@ const CACHE_TTL = 1 * 60 * 60 * 1000;
 @UseInterceptors(CacheInterceptor)
 @Roles(UsersRoles.Admin)
 export class StatisticsController {
-  constructor(private readonly statisticsService: StatisticsService) { }
+  constructor(private readonly statisticsService: StatisticsService) {}
 
   @Post('export')
   exportStatistics(

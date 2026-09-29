@@ -37,7 +37,9 @@ export class MailService {
 
   async sendReportMail(options: SendMailOptions): Promise<void> {
     const smtpUser = this.configService.get<string>('SMTP_USER');
-    const from = smtpUser ? `"FinKing Reports" <${smtpUser}>` : '"FinKing Reports" <reports@finking.com>';
+    const from = smtpUser
+      ? `"FinKing Reports" <${smtpUser}>`
+      : '"FinKing Reports" <reports@finking.com>';
 
     await this.transporter.sendMail({
       from,
