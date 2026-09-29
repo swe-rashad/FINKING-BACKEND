@@ -1,4 +1,4 @@
-# FinKing Backend — Distributed Fintech Engine & Financial Processing Platform
+# FinKing Backend — Merchant Panel Platform
 
 [![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?style=flat&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![NestJS](https://img.shields.io/badge/NestJS-11.x-E0234E?style=flat&logo=nestjs&logoColor=white)](https://nestjs.com/)
@@ -10,7 +10,7 @@
 [![Tests](https://img.shields.io/badge/Tests-142%20Passed-brightgreen?style=flat&logo=jest&logoColor=white)](https://jestjs.io/)
 [![Frontend](https://img.shields.io/badge/Frontend-FINKING--FRONTEND-61DAFB?style=flat&logo=react&logoColor=black)](https://github.com/swe-rashad/FINKING-FRONTEND)
 
-FinKing Backend is an enterprise-grade financial processing engine and analytics platform built with **Node.js** and **NestJS 11**. Engineered for high reliability and secure financial operations, the platform powers asynchronous distributed queue processing (**BullMQ + Redis**), multi-source transaction ingestion, real-time analytics aggregation, zero-trust token rotation security, and automated financial report generation pipelines.
+FinKing Backend is the core system powering the **FinKing Merchant Panel**, designed for merchant management, financial operations, transaction monitoring, and multi-tier access control. Built with **Node.js** and **NestJS 11**, the platform handles asynchronous distributed queue processing (**BullMQ + Redis**), multi-source transaction ingestion, real-time analytics aggregation, cryptographic session security with token rotation, and automated financial report generation.
 
 Frontend Repository: [swe-rashad/FINKING-FRONTEND](https://github.com/swe-rashad/FINKING-FRONTEND)
 
@@ -23,7 +23,7 @@ Frontend Repository: [swe-rashad/FINKING-FRONTEND](https://github.com/swe-rashad
 ```mermaid
 flowchart TB
   subgraph Client ["Client Layer"]
-    FE["FINKING-FRONTEND (Next.js 16 + React 19)"]
+    FE["FINKING-FRONTEND (Next.js 16 + React 19 Merchant Panel)"]
   end
 
   subgraph Gateway ["Security & HTTP Pipeline"]
@@ -34,7 +34,7 @@ flowchart TB
 
   subgraph Modules ["Domain Modules"]
     Auth["AuthModule (Token Rotation, Sign-In, Sign-Up)"]
-    Users["UsersModule (CRUD, Roles, Block/Unblock)"]
+    Users["UsersModule (Roles, Permissions, Block/Unblock)"]
     Merchants["MerchantsModule (Merchant Profiles)"]
     TxProvider["DatabaseTransactionProvider (Ingestion)"]
     Transactions["TransactionsModule (Filters, Details)"]
@@ -91,7 +91,7 @@ flowchart TB
 * **Multi-Tenant Merchant Isolation**: Automatic tenant scoping ensuring merchant accounts only access isolated transaction streams and localized business metrics.
 
 ### 3. Distributed Asynchronous Processing Engine (BullMQ & Redis)
-* **Non-Blocking Distributed Queues**: Heavy computational workloads (such as enterprise transaction exports and comprehensive analytics generation) are offloaded to Redis-backed **BullMQ** distributed queues (`export-queue`), ensuring API endpoints maintain sub-50ms response times.
+* **Non-Blocking Distributed Queues**: Heavy computational workloads (such as enterprise transaction exports and comprehensive analytics generation) are offloaded to Redis-backed **BullMQ** distributed queues (`export-queue`), ensuring sub-50ms HTTP response times.
 * **Dedicated Worker Host Architecture**: Background jobs are consumed by decoupled `ExportProcessor` workers running outside the HTTP event loop, featuring automated retries, error resilience, and progress tracking.
 * **Automated Multi-Sheet Report Generation**: Dynamically formats, styles, and serializes high-volume datasets into multi-worksheet `.xlsx` spreadsheets using **ExcelJS**, dispatched directly to authenticated recipients via **Nodemailer** with branded email templates.
 
@@ -123,13 +123,13 @@ flowchart TB
 
 ### Option A: Using Docker Compose
 
-Run the API, PostgreSQL, and Redis together:
+Run the platform services, PostgreSQL, and Redis together:
 
 ```bash
 docker compose up --build
 ```
 
-The API will start at `http://localhost:3000`.
+The service will start at `http://localhost:3000`.
 
 ---
 
