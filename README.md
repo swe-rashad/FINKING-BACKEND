@@ -1,18 +1,18 @@
 # FinKing Backend — Merchant Panel Platform
 
-[![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?style=flat&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-[![NestJS](https://img.shields.io/badge/NestJS-11.x-E0234E?style=flat&logo=nestjs&logoColor=white)](https://nestjs.com/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=flat&logo=redis&logoColor=white)](https://redis.io/)
+[![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?style=flat\&logo=nodedotjs\&logoColor=white)](https://nodejs.org/)
+[![NestJS](https://img.shields.io/badge/NestJS-11.x-E0234E?style=flat\&logo=nestjs\&logoColor=white)](https://nestjs.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat\&logo=typescript\&logoColor=white)](https://www.typescriptlang.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat\&logo=postgresql\&logoColor=white)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=flat\&logo=redis\&logoColor=white)](https://redis.io/)
 [![BullMQ](https://img.shields.io/badge/BullMQ-Distributed_Queues-orange?style=flat)](https://bullmq.io/)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
-[![Tests](https://img.shields.io/badge/Tests-142%20Passed-brightgreen?style=flat&logo=jest&logoColor=white)](https://jestjs.io/)
-[![Frontend](https://img.shields.io/badge/Frontend-FINKING--FRONTEND-61DAFB?style=flat&logo=react&logoColor=black)](https://github.com/swe-rashad/FINKING-FRONTEND)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat\&logo=docker\&logoColor=white)](https://www.docker.com/)
+[![Tests](https://img.shields.io/badge/Tests-142%20Passed-brightgreen?style=flat\&logo=jest\&logoColor=white)](https://jestjs.io/)
+[![Frontend](https://img.shields.io/badge/Frontend-FINKING--FRONTEND-61DAFB?style=flat\&logo=react\&logoColor=black)](https://github.com/swe-rashad/FINKING-FRONTEND)
 
-FinKing Backend is the core system powering the **FinKing Merchant Panel**, designed for merchant management, financial operations, transaction monitoring, and multi-tier access control. Built with **Node.js** and **NestJS 11**, the platform handles asynchronous distributed queue processing (**BullMQ + Redis**), multi-source transaction ingestion, real-time analytics aggregation, cryptographic session security with token rotation, and automated financial report generation.
+FinKing Backend is the backend system powering the **FinKing Merchant Panel**, designed for merchant management, financial operations, transaction monitoring, and multi-tier access control. Built with **Node.js** and **NestJS 11**, the platform handles asynchronous background processing with **BullMQ + Redis**, transaction ingestion, financial analytics, token rotation, and automated report generation.
 
-Frontend Repository: [swe-rashad/FINKING-FRONTEND](https://github.com/swe-rashad/FINKING-FRONTEND)
+Frontend Repository: https://github.com/swe-rashad/FINKING-FRONTEND
 
 ![FinKing Platform Dashboard](screenshots/dashboard-preview.png)
 
@@ -78,44 +78,48 @@ flowchart TB
 
 ## Core Architectural Capabilities
 
-### 1. Zero-Trust Security & Cryptographic Token Rotation Pipeline
-* **Cryptographic Token Rotation**: Access tokens are short-lived, while refresh tokens carry unique cryptographic UUID identifiers (`jti`). Upon token refresh, the previous `jti` is immediately blacklisted in Redis with an exact TTL, preventing replay attacks and token reuse.
-* **Three-Tier Authorization Chain**: Enforces granular access control through a composable pipeline: `JwtAuthGuard` -> `RolesGuard` -> `PermissionsGuard`, unifying Role-Based (RBAC) and Permission-Based (PBAC) security models.
-* **Active Status Enforcement**: User revocation or account suspension is enforced synchronously at the guard level; blocked accounts are immediately denied at the gateway, neutralizing stolen tokens in real-time.
-* **Global Exception Shielding & Traceability**: The enterprise `AllExceptionsFilter` intercepts unhandled runtime exceptions, masks sensitive database and ORM internals from external consumers, and attaches unique correlation trace IDs for auditability.
-* **Security Header Hardening**: HTTP transport security, frame protection, and content type sniffing prevention enforced globally via **Helmet**.
+### 1. Authentication, Authorization & Token Management
 
-### 2. Decoupled Financial Ingestion & Ledger Architecture
-* **Provider Strategy Pattern**: Transactions are ingested through an abstracted `TransactionProvider` interface, decoupling the core financial domain from specific underlying storage engines and enabling plug-and-play integrations with external Core Banking systems, payment gateways, or POS terminal feeds.
-* **Multi-Dimensional Query Filtering**: High-performance transaction queries supporting granular filters across execution status, transaction type, multi-currency values, sender/receiver identifiers, merchant references, RRN codes, and arbitrary date windows.
-* **Multi-Tenant Merchant Isolation**: Automatic tenant scoping ensuring merchant accounts only access isolated transaction streams and localized business metrics.
+* **Token Rotation**: Access tokens are short-lived, while refresh tokens carry unique cryptographic UUID identifiers (`jti`). Upon token refresh, the previous `jti` is immediately blacklisted in Redis with an exact TTL, preventing replay attacks and token reuse.
+* **Three-Tier Authorization Chain**: Enforces granular access control through a composable pipeline: `JwtAuthGuard` -> `RolesGuard` -> `PermissionsGuard`, combining Role-Based (RBAC) and Permission-Based (PBAC) access control.
+* **Active Status Enforcement**: User revocation or account suspension is checked at the guard level; blocked accounts are denied access even when using an otherwise valid token.
+* **Global Exception Handling & Traceability**: `AllExceptionsFilter` intercepts unhandled runtime exceptions, hides sensitive database and ORM details from external responses, and attaches unique correlation trace IDs.
+* **Security Headers**: HTTP transport security, frame protection, and content type sniffing prevention are enforced globally through **Helmet**.
 
-### 3. Distributed Asynchronous Processing Engine (BullMQ & Redis)
-* **Non-Blocking Distributed Queues**: Heavy computational workloads (such as enterprise transaction exports and comprehensive analytics generation) are offloaded to Redis-backed **BullMQ** distributed queues (`export-queue`), ensuring sub-50ms HTTP response times.
-* **Dedicated Worker Host Architecture**: Background jobs are consumed by decoupled `ExportProcessor` workers running outside the HTTP event loop, featuring automated retries, error resilience, and progress tracking.
-* **Automated Multi-Sheet Report Generation**: Dynamically formats, styles, and serializes high-volume datasets into multi-worksheet `.xlsx` spreadsheets using **ExcelJS**, dispatched directly to authenticated recipients via **Nodemailer** with branded email templates.
+### 2. Transaction Ingestion & Ledger Architecture
 
-### 4. Real-Time Financial Intelligence & Analytics Aggregations
-* **Dynamic Time-Series Analytics**: Aggregates gross revenue, transaction velocity, average transaction value (AOV), and active user metrics across dynamic time horizons (Weekly, Monthly, Yearly) using native database-level time truncations (`DATE_TRUNC`).
-* **Merchant Category Distribution**: Real-time aggregation of transaction volumes categorized by business sector for instant financial visibility and fraud anomaly detection.
-* **Executive Summary Reporting**: Real-time KPI calculations powering administrative dashboards without incurring full-table scan overhead.
+* **Provider Strategy Pattern**: Transactions are ingested through an abstracted `TransactionProvider` interface, separating the transaction domain from specific storage implementations and allowing integrations with external Core Banking systems, payment gateways, or POS terminal feeds.
+* **Multi-Dimensional Query Filtering**: Transaction queries support filters across execution status, transaction type, multi-currency values, sender/receiver identifiers, merchant references, RRN codes, and date ranges.
+* **Multi-Tenant Merchant Isolation**: Merchant accounts are scoped to their own transaction streams and related business metrics.
+
+### 3. Background Processing with BullMQ & Redis
+
+* **Background Queues**: Heavy workloads such as transaction exports and analytics generation are processed through Redis-backed **BullMQ** queues using the `export-queue`.
+* **Dedicated Worker Processing**: Background jobs are consumed by separate `ExportProcessor` workers outside the HTTP request flow, with automated retries, error handling, and progress tracking.
+* **Automated Multi-Sheet Report Generation**: Datasets are formatted, styled, and serialized into multi-worksheet `.xlsx` spreadsheets using **ExcelJS**, then sent to authenticated recipients through **Nodemailer** with email templates.
+
+### 4. Financial Analytics & Aggregations
+
+* **Dynamic Time-Series Analytics**: Aggregates gross revenue, transaction velocity, average transaction value (AOV), and active user metrics across dynamic time horizons (Weekly, Monthly, Yearly) using database-level time truncation with `DATE_TRUNC`.
+* **Merchant Category Distribution**: Aggregates transaction volumes by business sector for financial reporting and fraud anomaly detection.
+* **KPI Reporting**: Calculates summary KPIs used by administrative dashboards without requiring full-table scans.
 
 ---
 
 ## Tech Stack
 
-| Technology | Purpose |
-|---|---|
-| **NestJS 11** | Backend framework |
-| **TypeScript 5** | Static type checking and DTO contracts |
-| **PostgreSQL 16** | Relational database |
-| **TypeORM 1.x** | ORM and migrations |
-| **Redis 7** | Token blocklist and BullMQ queue broker |
-| **BullMQ** | Background job queue |
-| **ExcelJS** | Excel (.xlsx) file generation |
-| **Nodemailer** | SMTP email delivery |
-| **Helmet** | HTTP security headers |
-| **Jest** | Unit and integration testing |
+| Technology        | Purpose                                 |
+| ----------------- | --------------------------------------- |
+| **NestJS 11**     | Backend framework                       |
+| **TypeScript 5**  | Static type checking and DTO contracts  |
+| **PostgreSQL 16** | Relational database                     |
+| **TypeORM 1.x**   | ORM and migrations                      |
+| **Redis 7**       | Token blocklist and BullMQ queue broker |
+| **BullMQ**        | Background job queue                    |
+| **ExcelJS**       | Excel (.xlsx) file generation           |
+| **Nodemailer**    | SMTP email delivery                     |
+| **Helmet**        | HTTP security headers                   |
+| **Jest**          | Unit and integration testing            |
 
 ---
 
@@ -136,27 +140,33 @@ The service will start at `http://localhost:3000`.
 ### Option B: Local Setup with PNPM
 
 #### 1. Prerequisites
+
 * Node.js 20+
 * PNPM (`npm install -g pnpm`)
 * PostgreSQL 16 and Redis 7 running locally
 
 #### 2. Environment Configuration
+
 ```bash
 cp .env.sample .env
 ```
+
 Update `.env` with your database, Redis, and SMTP settings.
 
 #### 3. Install Dependencies
+
 ```bash
 pnpm install
 ```
 
 #### 4. Run Migrations & Seeds (Optional)
+
 ```bash
 pnpm db:seed
 ```
 
 #### 5. Start the Server
+
 ```bash
 # Development with hot-reload
 pnpm start:dev
