@@ -107,13 +107,13 @@ describe('StatisticsController', () => {
     });
   });
 
-  describe('getAvarageTransactionAmount', () => {
+  describe('getAverageTransactionAmount', () => {
     it('should delegate to service.getAverageTransactionAmount', async () => {
       (service.getAverageTransactionAmount as jest.Mock).mockResolvedValue({
         value: 41.67,
       });
 
-      const result = await controller.getAvarageTransactionAmount(queryDto);
+      const result = await controller.getAverageTransactionAmount(queryDto);
 
       expect(service.getAverageTransactionAmount).toHaveBeenCalledWith(
         queryDto,

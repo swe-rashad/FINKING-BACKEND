@@ -55,8 +55,8 @@ export class StatisticsController {
     return this.statisticsService.getTotalTransactions(payload);
   }
 
-  @Get('/avarage-transaction-amount')
-  getAvarageTransactionAmount(@Query() payload: GetStatisticsDto) {
+  @Get('/average-transaction-amount')
+  getAverageTransactionAmount(@Query() payload: GetStatisticsDto) {
     return this.statisticsService.getAverageTransactionAmount(payload);
   }
 
