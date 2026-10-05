@@ -1,18 +1,9 @@
-import {
-  Body,
-  Controller,
-  ExecutionContext,
-  Get,
-  Injectable,
-  Post,
-  Query,
-  UseInterceptors,
-} from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { StatisticsService } from './statistics.service';
 import { GetStatisticsDto } from './dto/get-statistics.dto';
 import { ExportStatisticsDto } from './dto/export-statistics.dto';
-import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
+import { CacheTTL } from '@nestjs/cache-manager';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { UsersRoles } from '@/modules/users/types/users.type';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
@@ -20,40 +11,10 @@ import type { JwtPayload } from '@/modules/auth/types/auth.type';
 
 const CACHE_TTL = 1 * 60 * 60 * 1000;
 
-@Injectable()
-class StatisticsCacheInterceptor extends CacheInterceptor {
-  protected trackBy(context: ExecutionContext): string | undefined {
-    if (!this.isRequestCacheable(context)) {
-      return undefined;
-    }
-
-    const request = context.switchToHttp().getRequest<{
-      user?: JwtPayload;
-      originalUrl?: string;
-      url?: string;
-    }>();
-    const merchantId = request.user?.merchantId;
-    if (merchantId == null) {
-      return undefined;
-    }
-
-    const adapterUrl: unknown =
-      this.httpAdapterHost?.httpAdapter.getRequestUrl(request);
-    const url =
-      (typeof adapterUrl === 'string' ? adapterUrl : undefined) ??
-      request.originalUrl ??
-      request.url ??
-      '';
-
-    return `statistics:merchant:${merchantId}:${url}`;
-  }
-}
-
 @ApiTags('Statistics')
 @ApiBearerAuth('JWT-auth')
 @Controller('statistics')
 @CacheTTL(CACHE_TTL)
-@UseInterceptors(StatisticsCacheInterceptor)
 @Roles(UsersRoles.Admin)
 export class StatisticsController {
   constructor(private readonly statisticsService: StatisticsService) {}

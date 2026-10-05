@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { StatisticsController } from './statistics.controller';
 import { StatisticsService } from './statistics.service';
 import { GetStatisticsDto } from './dto/get-statistics.dto';
@@ -43,14 +42,6 @@ describe('StatisticsController', () => {
         {
           provide: StatisticsService,
           useValue: service,
-        },
-        {
-          provide: CACHE_MANAGER,
-          useValue: {
-            get: jest.fn(),
-            set: jest.fn(),
-            del: jest.fn(),
-          },
         },
       ],
     }).compile();

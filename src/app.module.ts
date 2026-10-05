@@ -5,7 +5,7 @@ import { MerchantsModule } from './modules/merchants/merchants.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import configuration from './config/configuration';
 import { JwtModule } from '@nestjs/jwt';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { PermissionsGuard } from './common/guards/permission.guard';
@@ -19,6 +19,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { RedisOptions } from './config/redisConfig';
 import { MiddlewareConsumer } from '@nestjs/common';
 import { TraceIdMiddleware } from './common/middlewares/traceId.middleware';
+import { HttpCacheInterceptor } from './common/interceptors/http-cache.interceptor';
 
 @Module({
   imports: [
@@ -67,6 +68,10 @@ import { TraceIdMiddleware } from './common/middlewares/traceId.middleware';
     {
       provide: APP_GUARD,
       useClass: PermissionsGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: HttpCacheInterceptor,
     },
     BlocklistService,
   ],
