@@ -20,6 +20,7 @@ import {
   TransactionTypeEnumType,
 } from '@/modules/transactions/types';
 import { StatisticsCalculatorHelper } from './helpers/statistics-calculator.helper';
+import { MerchantNotFoundException } from '@/common/exceptions';
 
 @Injectable()
 export class StatisticsService {
@@ -34,10 +35,22 @@ export class StatisticsService {
     return resolveDateRange(payload);
   }
 
+  private resolveMerchantId(
+    currentUser: Pick<JwtPayload, 'merchantId'>,
+  ): number {
+    const merchantId = currentUser.merchantId;
+    if (merchantId == null) {
+      throw new MerchantNotFoundException();
+    }
+    return merchantId;
+  }
+
   async getRevenueOverview(
     payload: GetStatisticsDto,
+    currentUser: Pick<JwtPayload, 'merchantId'>,
   ): Promise<RevenueStatisticsDataType> {
     const { startDate, endDate } = this.getDateRange(payload);
+    const merchantId = this.resolveMerchantId(currentUser);
     const period = StatisticsCalculatorHelper.getRevenuePeriod(
       startDate,
       endDate,
@@ -53,11 +66,16 @@ export class StatisticsService {
         startDate,
         endDate,
       })
+      .andWhere('transaction.merchantId = :merchantId', { merchantId })
       .groupBy(dateExpr)
       .addGroupBy('transaction.currency')
       .orderBy(dateExpr, 'ASC')
       .addOrderBy('transaction.currency', 'ASC')
-      .getRawMany<{ date: string; currency: CurrencyEnumType; value: string | number }>();
+      .getRawMany<{
+        date: string;
+        currency: CurrencyEnumType;
+        value: string | number;
+      }>();
 
     const data = StatisticsCalculatorHelper.formatRevenueData(rawData);
 
@@ -69,8 +87,10 @@ export class StatisticsService {
 
   async getCategoryDistribution(
     payload: GetStatisticsDto,
+    currentUser: Pick<JwtPayload, 'merchantId'>,
   ): Promise<CategoryDistributionStatisticsDataType> {
     const { startDate, endDate } = this.getDateRange(payload);
+    const merchantId = this.resolveMerchantId(currentUser);
 
     const rawData = await this.transactionRepository
       .createQueryBuilder('transaction')
@@ -84,6 +104,7 @@ export class StatisticsService {
         startDate,
         endDate,
       })
+      .andWhere('transaction.merchantId = :merchantId', { merchantId })
       .groupBy('transaction.type')
       .getRawMany<{
         type: TransactionTypeEnumType;
@@ -94,8 +115,12 @@ export class StatisticsService {
     return StatisticsCalculatorHelper.formatCategoryDistributionData(rawData);
   }
 
-  async getTotalRevenue(payload: GetStatisticsDto): Promise<{ value: number }> {
+  async getTotalRevenue(
+    payload: GetStatisticsDto,
+    currentUser: Pick<JwtPayload, 'merchantId'>,
+  ): Promise<{ value: number }> {
     const { startDate, endDate } = this.getDateRange(payload);
+    const merchantId = this.resolveMerchantId(currentUser);
 
     const result = await this.transactionRepository
       .createQueryBuilder('transaction')
@@ -104,6 +129,7 @@ export class StatisticsService {
         startDate,
         endDate,
       })
+      .andWhere('transaction.merchantId = :merchantId', { merchantId })
       .getRawOne<{ totalRevenue: string | number }>();
 
     return {
@@ -113,8 +139,10 @@ export class StatisticsService {
 
   async getTotalTransactions(
     payload: GetStatisticsDto,
+    currentUser: Pick<JwtPayload, 'merchantId'>,
   ): Promise<{ value: number }> {
     const { startDate, endDate } = this.getDateRange(payload);
+    const merchantId = this.resolveMerchantId(currentUser);
 
     const result = await this.transactionRepository
       .createQueryBuilder('transaction')
@@ -126,6 +154,7 @@ export class StatisticsService {
         startDate,
         endDate,
       })
+      .andWhere('transaction.merchantId = :merchantId', { merchantId })
       .getRawOne<{ totalTransactions: string | number }>();
 
     return {
@@ -135,8 +164,10 @@ export class StatisticsService {
 
   async getAverageTransactionAmount(
     payload: GetStatisticsDto,
+    currentUser: Pick<JwtPayload, 'merchantId'>,
   ): Promise<{ value: number }> {
     const { startDate, endDate } = this.getDateRange(payload);
+    const merchantId = this.resolveMerchantId(currentUser);
 
     const result = await this.transactionRepository
       .createQueryBuilder('transaction')
@@ -145,6 +176,7 @@ export class StatisticsService {
         startDate,
         endDate,
       })
+      .andWhere('transaction.merchantId = :merchantId', { merchantId })
       .getRawOne<{ averageAmount: string | number }>();
 
     return {
@@ -152,8 +184,12 @@ export class StatisticsService {
     };
   }
 
-  async getActiveUsers(payload: GetStatisticsDto): Promise<{ value: number }> {
+  async getActiveUsers(
+    payload: GetStatisticsDto,
+    currentUser: Pick<JwtPayload, 'merchantId'>,
+  ): Promise<{ value: number }> {
     const { startDate, endDate } = this.getDateRange(payload);
+    const merchantId = this.resolveMerchantId(currentUser);
 
     const result = await this.transactionRepository
       .createQueryBuilder('transaction')
@@ -165,6 +201,7 @@ export class StatisticsService {
         startDate,
         endDate,
       })
+      .andWhere('transaction.merchantId = :merchantId', { merchantId })
       .getRawOne<{ activeUsersCount: string | number }>();
 
     return {
@@ -174,12 +211,15 @@ export class StatisticsService {
 
   async getLastTransactions(
     payload: GetStatisticsDto,
+    currentUser: Pick<JwtPayload, 'merchantId'>,
   ): Promise<Transactions[]> {
     const { dateRange } = this.getDateRange(payload);
+    const merchantId = this.resolveMerchantId(currentUser);
 
     return this.transactionRepository.find({
       where: {
         dateOfOperation: dateRange,
+        merchantId,
       },
       order: {
         dateOfOperation: 'DESC',
@@ -193,11 +233,13 @@ export class StatisticsService {
     currentUser: JwtPayload,
   ): Promise<{ message: string; recipientEmail: string }> {
     validateDateRange(dto.startDate, dto.endDate);
+    const merchantId = this.resolveMerchantId(currentUser);
 
     const recipientEmail = dto.email || currentUser.email;
 
     await this.exportQueue.add('export-statistics', {
       recipientEmail,
+      merchantId,
       filters: {
         startDate: dto.startDate
           ? new Date(dto.startDate).toISOString()

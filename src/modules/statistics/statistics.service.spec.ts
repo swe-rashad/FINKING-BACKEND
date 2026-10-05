@@ -15,6 +15,15 @@ describe('StatisticsService', () => {
   let repository: jest.Mocked<Partial<Repository<Transactions>>>;
   let exportQueue: { add: jest.Mock };
 
+  const currentUser: JwtPayload = {
+    jti: 'admin-jti',
+    sub: 1,
+    email: 'admin@finking.com',
+    role: UsersRoles.Admin,
+    type: 'access',
+    merchantId: 10,
+  };
+
   beforeEach(async () => {
     repository = {
       createQueryBuilder: jest.fn(),
@@ -53,9 +62,9 @@ describe('StatisticsService', () => {
         endDate: new Date('2025-01-01'),
       };
 
-      await expect(service.getTotalRevenue(payload)).rejects.toThrow(
-        new BadRequestException('Invalid date provided'),
-      );
+      await expect(
+        service.getTotalRevenue(payload, currentUser),
+      ).rejects.toThrow(new BadRequestException('Invalid date provided'));
     });
 
     it('should throw BadRequestException if startDate is after endDate', async () => {
@@ -64,7 +73,9 @@ describe('StatisticsService', () => {
         endDate: new Date('2025-01-01'),
       };
 
-      await expect(service.getTotalRevenue(payload)).rejects.toThrow(
+      await expect(
+        service.getTotalRevenue(payload, currentUser),
+      ).rejects.toThrow(
         new BadRequestException('startDate cannot be greater than endDate'),
       );
     });
@@ -75,6 +86,7 @@ describe('StatisticsService', () => {
       const queryBuilder: any = {
         select: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         getRawOne: jest.fn().mockResolvedValue({ totalRevenue: '12500.50' }),
       };
       (repository.createQueryBuilder as jest.Mock).mockReturnValue(
@@ -86,9 +98,13 @@ describe('StatisticsService', () => {
         endDate: new Date('2025-01-31'),
       };
 
-      const result = await service.getTotalRevenue(payload);
+      const result = await service.getTotalRevenue(payload, currentUser);
 
       expect(result).toEqual({ value: 12500.5 });
+      expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+        'transaction.merchantId = :merchantId',
+        { merchantId: 10 },
+      );
       expect(queryBuilder.getRawOne).toHaveBeenCalled();
     });
 
@@ -96,13 +112,14 @@ describe('StatisticsService', () => {
       const queryBuilder: any = {
         select: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         getRawOne: jest.fn().mockResolvedValue(null),
       };
       (repository.createQueryBuilder as jest.Mock).mockReturnValue(
         queryBuilder,
       );
 
-      const result = await service.getTotalRevenue({});
+      const result = await service.getTotalRevenue({}, currentUser);
 
       expect(result).toEqual({ value: 0 });
     });
@@ -113,13 +130,14 @@ describe('StatisticsService', () => {
       const queryBuilder: any = {
         select: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         getRawOne: jest.fn().mockResolvedValue({ totalTransactions: '42' }),
       };
       (repository.createQueryBuilder as jest.Mock).mockReturnValue(
         queryBuilder,
       );
 
-      const result = await service.getTotalTransactions({});
+      const result = await service.getTotalTransactions({}, currentUser);
 
       expect(result).toEqual({ value: 42 });
     });
@@ -130,13 +148,14 @@ describe('StatisticsService', () => {
       const queryBuilder: any = {
         select: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         getRawOne: jest.fn().mockResolvedValue({ averageAmount: '75.50' }),
       };
       (repository.createQueryBuilder as jest.Mock).mockReturnValue(
         queryBuilder,
       );
 
-      const result = await service.getAverageTransactionAmount({});
+      const result = await service.getAverageTransactionAmount({}, currentUser);
 
       expect(result).toEqual({ value: 75.5 });
     });
@@ -147,13 +166,14 @@ describe('StatisticsService', () => {
       const queryBuilder: any = {
         select: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         getRawOne: jest.fn().mockResolvedValue({ activeUsersCount: '15' }),
       };
       (repository.createQueryBuilder as jest.Mock).mockReturnValue(
         queryBuilder,
       );
 
-      const result = await service.getActiveUsers({});
+      const result = await service.getActiveUsers({}, currentUser);
 
       expect(result).toEqual({ value: 15 });
     });
@@ -165,6 +185,7 @@ describe('StatisticsService', () => {
         select: jest.fn().mockReturnThis(),
         addSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         groupBy: jest.fn().mockReturnThis(),
         addGroupBy: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
@@ -184,7 +205,7 @@ describe('StatisticsService', () => {
         endDate: new Date('2025-01-20'),
       };
 
-      const result = await service.getRevenueOverview(payload);
+      const result = await service.getRevenueOverview(payload, currentUser);
 
       expect(result.period).toBe(RevenuePeriodEnum.Weekly);
       expect(result.data).toEqual([
@@ -199,6 +220,7 @@ describe('StatisticsService', () => {
         select: jest.fn().mockReturnThis(),
         addSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         groupBy: jest.fn().mockReturnThis(),
         getRawMany: jest.fn().mockResolvedValue([
           { type: 'payment', value: '500.00', transactionsCount: '5' },
@@ -209,7 +231,7 @@ describe('StatisticsService', () => {
         queryBuilder,
       );
 
-      const result = await service.getCategoryDistribution({});
+      const result = await service.getCategoryDistribution({}, currentUser);
 
       expect(result.totalTransactions).toBe(6);
       expect(result.data).toHaveLength(2);
@@ -226,12 +248,13 @@ describe('StatisticsService', () => {
       const mockList = [{ transactionId: 1 }, { transactionId: 2 }] as any;
       (repository.find as jest.Mock).mockResolvedValue(mockList);
 
-      const result = await service.getLastTransactions({});
+      const result = await service.getLastTransactions({}, currentUser);
 
       expect(repository.find).toHaveBeenCalledWith(
         expect.objectContaining({
           take: 3,
           order: { dateOfOperation: 'DESC' },
+          where: expect.objectContaining({ merchantId: 10 }),
         }),
       );
       expect(result).toEqual(mockList);
@@ -245,6 +268,7 @@ describe('StatisticsService', () => {
       email: 'admin@finking.com',
       role: UsersRoles.Admin,
       type: 'access',
+      merchantId: 10,
     };
 
     it('should add export-statistics job to queue with default email', async () => {
@@ -252,6 +276,7 @@ describe('StatisticsService', () => {
 
       expect(exportQueue.add).toHaveBeenCalledWith('export-statistics', {
         recipientEmail: 'admin@finking.com',
+        merchantId: 10,
         filters: {
           startDate: undefined,
           endDate: undefined,
@@ -298,6 +323,7 @@ describe('StatisticsService', () => {
 
       expect(exportQueue.add).toHaveBeenCalledWith('export-statistics', {
         recipientEmail: 'cfo@finking.com',
+        merchantId: 10,
         filters: {
           startDate: startDate.toISOString(),
           endDate: endDate.toISOString(),

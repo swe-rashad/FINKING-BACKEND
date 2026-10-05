@@ -4,6 +4,8 @@ import { StatisticsController } from './statistics.controller';
 import { StatisticsService } from './statistics.service';
 import { GetStatisticsDto } from './dto/get-statistics.dto';
 import { RevenuePeriodEnum } from './types/statistics.type';
+import { UsersRoles } from '@/modules/users/types/users.type';
+import type { JwtPayload } from '@/modules/auth/types/auth.type';
 
 describe('StatisticsController', () => {
   let controller: StatisticsController;
@@ -12,6 +14,15 @@ describe('StatisticsController', () => {
   const queryDto: GetStatisticsDto = {
     startDate: new Date('2025-01-01'),
     endDate: new Date('2025-01-31'),
+  };
+
+  const currentUser: JwtPayload = {
+    jti: 'admin-jti',
+    sub: 1,
+    email: 'admin@finking.com',
+    role: UsersRoles.Admin,
+    type: 'access',
+    merchantId: 10,
   };
 
   beforeEach(async () => {
@@ -59,9 +70,12 @@ describe('StatisticsController', () => {
       };
       (service.getRevenueOverview as jest.Mock).mockResolvedValue(mockResult);
 
-      const result = await controller.getRevenueOverview(queryDto);
+      const result = await controller.getRevenueOverview(queryDto, currentUser);
 
-      expect(service.getRevenueOverview).toHaveBeenCalledWith(queryDto);
+      expect(service.getRevenueOverview).toHaveBeenCalledWith(
+        queryDto,
+        currentUser,
+      );
       expect(result).toEqual(mockResult);
     });
   });
@@ -76,9 +90,15 @@ describe('StatisticsController', () => {
         mockResult,
       );
 
-      const result = await controller.getCategoryDistribution(queryDto);
+      const result = await controller.getCategoryDistribution(
+        queryDto,
+        currentUser,
+      );
 
-      expect(service.getCategoryDistribution).toHaveBeenCalledWith(queryDto);
+      expect(service.getCategoryDistribution).toHaveBeenCalledWith(
+        queryDto,
+        currentUser,
+      );
       expect(result).toEqual(mockResult);
     });
   });
@@ -87,9 +107,12 @@ describe('StatisticsController', () => {
     it('should delegate to service.getTotalRevenue', async () => {
       (service.getTotalRevenue as jest.Mock).mockResolvedValue({ value: 5000 });
 
-      const result = await controller.getTotalRevenue(queryDto);
+      const result = await controller.getTotalRevenue(queryDto, currentUser);
 
-      expect(service.getTotalRevenue).toHaveBeenCalledWith(queryDto);
+      expect(service.getTotalRevenue).toHaveBeenCalledWith(
+        queryDto,
+        currentUser,
+      );
       expect(result).toEqual({ value: 5000 });
     });
   });
@@ -100,9 +123,15 @@ describe('StatisticsController', () => {
         value: 120,
       });
 
-      const result = await controller.getTotalTransactions(queryDto);
+      const result = await controller.getTotalTransactions(
+        queryDto,
+        currentUser,
+      );
 
-      expect(service.getTotalTransactions).toHaveBeenCalledWith(queryDto);
+      expect(service.getTotalTransactions).toHaveBeenCalledWith(
+        queryDto,
+        currentUser,
+      );
       expect(result).toEqual({ value: 120 });
     });
   });
@@ -113,10 +142,14 @@ describe('StatisticsController', () => {
         value: 41.67,
       });
 
-      const result = await controller.getAverageTransactionAmount(queryDto);
+      const result = await controller.getAverageTransactionAmount(
+        queryDto,
+        currentUser,
+      );
 
       expect(service.getAverageTransactionAmount).toHaveBeenCalledWith(
         queryDto,
+        currentUser,
       );
       expect(result).toEqual({ value: 41.67 });
     });
@@ -126,9 +159,12 @@ describe('StatisticsController', () => {
     it('should delegate to service.getActiveUsers', async () => {
       (service.getActiveUsers as jest.Mock).mockResolvedValue({ value: 25 });
 
-      const result = await controller.getActiveUsers(queryDto);
+      const result = await controller.getActiveUsers(queryDto, currentUser);
 
-      expect(service.getActiveUsers).toHaveBeenCalledWith(queryDto);
+      expect(service.getActiveUsers).toHaveBeenCalledWith(
+        queryDto,
+        currentUser,
+      );
       expect(result).toEqual({ value: 25 });
     });
   });
@@ -138,9 +174,15 @@ describe('StatisticsController', () => {
       const mockList = [{ transactionId: 1 }] as any;
       (service.getLastTransactions as jest.Mock).mockResolvedValue(mockList);
 
-      const result = await controller.getLastTransactions(queryDto);
+      const result = await controller.getLastTransactions(
+        queryDto,
+        currentUser,
+      );
 
-      expect(service.getLastTransactions).toHaveBeenCalledWith(queryDto);
+      expect(service.getLastTransactions).toHaveBeenCalledWith(
+        queryDto,
+        currentUser,
+      );
       expect(result).toEqual(mockList);
     });
   });
@@ -153,14 +195,6 @@ describe('StatisticsController', () => {
         recipientEmail: 'admin@finking.com',
       };
       (service.exportStatistics as jest.Mock).mockResolvedValue(mockResult);
-
-      const currentUser = {
-        jti: 'admin-jti',
-        sub: 1,
-        email: 'admin@finking.com',
-        role: 'Admin' as any,
-        type: 'access' as const,
-      };
 
       const result = await controller.exportStatistics(queryDto, currentUser);
 

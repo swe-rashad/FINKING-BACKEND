@@ -116,13 +116,14 @@ export class ExportProcessor extends WorkerHost {
   }
 
   private async handleStatisticsExport(job: Job): Promise<void> {
-    const { recipientEmail, filters } = job.data;
+    const { recipientEmail, filters, merchantId } = job.data;
     this.logger.log(`Processing statistics export for ${recipientEmail}`);
 
     const statsDto = {
       startDate: filters?.startDate ? new Date(filters.startDate) : undefined,
       endDate: filters?.endDate ? new Date(filters.endDate) : undefined,
     };
+    const currentUser = { merchantId };
 
     const [
       revenueOverview,
@@ -130,10 +131,10 @@ export class ExportProcessor extends WorkerHost {
       totalRevenueResult,
       totalTransactionsResult,
     ] = await Promise.all([
-      this.statisticsService.getRevenueOverview(statsDto),
-      this.statisticsService.getCategoryDistribution(statsDto),
-      this.statisticsService.getTotalRevenue(statsDto),
-      this.statisticsService.getTotalTransactions(statsDto),
+      this.statisticsService.getRevenueOverview(statsDto, currentUser),
+      this.statisticsService.getCategoryDistribution(statsDto, currentUser),
+      this.statisticsService.getTotalRevenue(statsDto, currentUser),
+      this.statisticsService.getTotalTransactions(statsDto, currentUser),
     ]);
 
     const fileBuffer = await this.excelService.buildStatisticsWorkbook({
